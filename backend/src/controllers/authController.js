@@ -19,19 +19,12 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please add all fields' });
     }
 
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-
+    const userExists = User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password
-    });
+    const user = await User.create({ name, email, password });
 
     if (user) {
       res.status(201).json({
@@ -39,7 +32,7 @@ const registerUser = async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
-        token: generateToken(user._id),
+        token: generateToken(user.id),
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -56,8 +49,7 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Check for user email
-    const user = await User.findOne({ email });
+    const user = User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
       res.json({
@@ -65,7 +57,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
-        token: generateToken(user._id),
+        token: generateToken(user.id),
       });
     } else {
       res.status(401).json({ message: 'Invalid credentials' });
@@ -91,3 +83,4 @@ module.exports = {
   loginUser,
   getMe,
 };
+

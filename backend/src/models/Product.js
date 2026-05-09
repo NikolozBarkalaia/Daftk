@@ -1,56 +1,81 @@
-const mongoose = require('mongoose');
+const db = require('../config/db');
 
-const productSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Please add a product name']
-  },
-  description: {
-    type: String,
-    required: [true, 'Please add a description']
-  },
-  price: {
-    type: Number,
-    required: [true, 'Please add a price'],
-    default: 0
-  },
-  oldPrice: {
-    type: Number,
-    required: false,
-    default: null
-  },
-  imageUrls: {
-    type: [String],
-    required: false,
-    default: []
-  },
-  category: {
-    type: String,
-    required: [true, 'Please add a category']
-  },
-  tags: {
-    type: [String],
-    required: false,
-    default: []
-  },
-  stock: {
-    type: Number,
-    required: [true, 'Please add stock quantity'],
-    default: 0
-  },
-  isFeatured: {
-    type: Boolean,
-    default: false
-  },
-  luxuryLabel: {
-    type: String,
-    required: false,
-    enum: ['new', 'exclusive', 'limited', 'bestseller', null],
-    default: null
-  }
-}, {
-  timestamps: true
-});
+function now() { return new Date().toISOString(); }
 
-const Product = mongoose.model('Product', productSchema);
+function format(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    _id: row.id,
+    imageUrls: JSON.parse(row.imageUrls || '[]'),
+    tags: JSON.parse(row.tags || '[]'),
+    isFeatured: row.isFeatured === 1,
+  };
+}
+
+const Product = {
+  find({ category } = {}, { skip = 0, limit = 20 } = {}) {
+    if (category) {
+      return db.prepare(
+        'SELECT * FROM products WHERE category = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?'
+      ).all(category, limit, skip).map(format);
+    }
+    return db.prepare(
+      'SELECT * FROM products ORDER BY createdAt DESC LIMIT ? OFFSET ?'
+    ).all(limit, skip).map(format);
+  },
+
+  countDocuments({ category } = {}) {
+    if (category) {
+      return db.prepare('SELECT COUNT(*) as c FROM products WHERE category = ?').get(category).c;
+    }
+    return db.prepare('SELECT COUNT(*) as c FROM products').get().c;
+  },
+
+  findFeatured(limit = 8) {
+    return db.prepare(
+      'SELECT * FROM products WHERE isFeatured = 1 ORDER BY createdAt DESC LIMIT ?'
+    ).all(limit).map(format);
+  },
+
+  findById(id) {
+    return format(db.prepare('SELECT * FROM products WHERE id = ?').get(id));
+  },
+
+  create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [] }) {
+    const ts = now();
+    const info = db.prepare(
+      `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, ts, ts);
+    return this.findById(info.lastInsertRowid);
+  },
+
+  update(id, fields) {
+    const p = this.findById(id);
+    if (!p) return null;
+    db.prepare(
+      `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, updatedAt=? WHERE id=?`
+    ).run(
+      fields.name !== undefined ? fields.name : p.name,
+      fields.description !== undefined ? fields.description : p.description,
+      fields.price !== undefined ? fields.price : p.price,
+      fields.oldPrice !== undefined ? fields.oldPrice : p.oldPrice,
+      JSON.stringify(fields.imageUrls !== undefined ? fields.imageUrls : p.imageUrls),
+      fields.category !== undefined ? fields.category : p.category,
+      JSON.stringify(fields.tags !== undefined ? fields.tags : p.tags),
+      fields.stock !== undefined ? fields.stock : p.stock,
+      (fields.isFeatured !== undefined ? fields.isFeatured : p.isFeatured) ? 1 : 0,
+      fields.luxuryLabel !== undefined ? fields.luxuryLabel : p.luxuryLabel,
+      now(), id
+    );
+    return this.findById(id);
+  },
+
+  delete(id) {
+    db.prepare('DELETE FROM products WHERE id = ?').run(id);
+  },
+};
+
 module.exports = Product;
+

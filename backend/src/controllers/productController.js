@@ -3,30 +3,22 @@ const Product = require('../models/Product');
 // @desc    Get all products (public)
 // @route   GET /api/products
 // @access  Public
-const getProducts = async (req, res) => {
+const getProducts = (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const category = req.query.category;
     const skip = (page - 1) * limit;
 
-    let query = {};
-    if (category) {
-      query.category = category;
-    }
-
-    const products = await Product.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Product.countDocuments(query);
+    const query = category ? { category } : {};
+    const products = Product.find(query, { skip, limit });
+    const total = Product.countDocuments(query);
 
     res.status(200).json({
       products,
       page,
       pages: Math.ceil(total / limit),
-      total
+      total,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -36,14 +28,12 @@ const getProducts = async (req, res) => {
 // @desc    Get single product by ID (public)
 // @route   GET /api/products/:id
 // @access  Public
-const getProductById = async (req, res) => {
+const getProductById = (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-
+    const product = Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-
     res.status(200).json(product);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -53,14 +43,10 @@ const getProductById = async (req, res) => {
 // @desc    Get featured products (public)
 // @route   GET /api/products/featured
 // @access  Public
-const getFeaturedProducts = async (req, res) => {
+const getFeaturedProducts = (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
-
-    const products = await Product.find({ isFeatured: true })
-      .limit(limit)
-      .sort({ createdAt: -1 });
-
+    const products = Product.findFeatured(limit);
     res.status(200).json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -70,7 +56,7 @@ const getFeaturedProducts = async (req, res) => {
 // @desc    Create product
 // @route   POST /api/admin/products
 // @access  Private/Admin
-const createProduct = async (req, res) => {
+const createProduct = (req, res) => {
   try {
     const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls } = req.body;
 
@@ -78,17 +64,8 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: 'Please provide required fields' });
     }
 
-    const product = await Product.create({
-      name,
-      description,
-      price,
-      oldPrice,
-      category,
-      tags,
-      stock,
-      isFeatured,
-      luxuryLabel,
-      imageUrls
+    const product = Product.create({
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls,
     });
 
     res.status(201).json(product);
@@ -100,30 +77,20 @@ const createProduct = async (req, res) => {
 // @desc    Update product
 // @route   PUT /api/admin/products/:id
 // @access  Private/Admin
-const updateProduct = async (req, res) => {
+const updateProduct = (req, res) => {
   try {
     const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls } = req.body;
 
-    const product = await Product.findById(req.params.id);
-
+    const product = Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Update fields if provided
-    if (name) product.name = name;
-    if (description) product.description = description;
-    if (price) product.price = price;
-    if (oldPrice !== undefined) product.oldPrice = oldPrice;
-    if (category) product.category = category;
-    if (tags) product.tags = tags;
-    if (stock !== undefined) product.stock = stock;
-    if (isFeatured !== undefined) product.isFeatured = isFeatured;
-    if (luxuryLabel !== undefined) product.luxuryLabel = luxuryLabel;
-    if (imageUrls) product.imageUrls = imageUrls;
+    const updated = Product.update(req.params.id, {
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls,
+    });
 
-    await product.save();
-    res.status(200).json(product);
+    res.status(200).json(updated);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -132,24 +99,21 @@ const updateProduct = async (req, res) => {
 // @desc    Add image URL to product
 // @route   PUT /api/admin/products/:id/images
 // @access  Private/Admin
-const addProductImage = async (req, res) => {
+const addProductImage = (req, res) => {
   try {
     const { imageUrl } = req.body;
-
     if (!imageUrl) {
       return res.status(400).json({ message: 'Please provide image URL' });
     }
 
-    const product = await Product.findById(req.params.id);
-
+    const product = Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    product.imageUrls.push(imageUrl);
-    await product.save();
-
-    res.status(200).json(product);
+    const newUrls = [...product.imageUrls, imageUrl];
+    const updated = Product.update(req.params.id, { imageUrls: newUrls });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -158,12 +122,11 @@ const addProductImage = async (req, res) => {
 // @desc    Remove image URL from product
 // @route   DELETE /api/admin/products/:id/images/:imageIndex
 // @access  Private/Admin
-const removeProductImage = async (req, res) => {
+const removeProductImage = (req, res) => {
   try {
-    const { imageIndex } = req.params;
+    const imageIndex = parseInt(req.params.imageIndex);
 
-    const product = await Product.findById(req.params.id);
-
+    const product = Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -172,10 +135,10 @@ const removeProductImage = async (req, res) => {
       return res.status(400).json({ message: 'Invalid image index' });
     }
 
-    product.imageUrls.splice(imageIndex, 1);
-    await product.save();
-
-    res.status(200).json(product);
+    const newUrls = [...product.imageUrls];
+    newUrls.splice(imageIndex, 1);
+    const updated = Product.update(req.params.id, { imageUrls: newUrls });
+    res.status(200).json(updated);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -184,15 +147,13 @@ const removeProductImage = async (req, res) => {
 // @desc    Delete product
 // @route   DELETE /api/admin/products/:id
 // @access  Private/Admin
-const deleteProduct = async (req, res) => {
+const deleteProduct = (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-
+    const product = Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-
-    await product.deleteOne();
+    Product.delete(req.params.id);
     res.status(200).json({ message: 'Product removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -207,5 +168,6 @@ module.exports = {
   updateProduct,
   addProductImage,
   removeProductImage,
-  deleteProduct
+  deleteProduct,
 };
+

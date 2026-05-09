@@ -1,27 +1,20 @@
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const User = require('./models/User');
-
-// Load env vars
 dotenv.config();
 
-// Connect to DB
-mongoose.connect(process.env.MONGO_URI);
+// Initialize DB (creates tables)
+require('./config/db');
+const User = require('./models/User');
 
 const importData = async () => {
   try {
-    // Clear existing users
-    await User.deleteMany();
+    User.deleteAll();
 
-    // Create an admin user
-    const adminUser = new User({
+    await User.create({
       name: 'Admin User',
       email: 'admin@daftk.com',
-      password: 'password123', // Will be hashed by pre-save hook
-      isAdmin: true
+      password: 'password123',
+      isAdmin: true,
     });
-
-    await adminUser.save();
 
     console.log('Data Imported - Admin user created!');
     console.log('Email: admin@daftk.com');
@@ -33,8 +26,4 @@ const importData = async () => {
   }
 };
 
-if (process.argv[2] === '-d') {
-  // Add destroy data logic here if needed
-} else {
-  importData();
-}
+importData();

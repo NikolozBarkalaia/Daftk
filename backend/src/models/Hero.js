@@ -1,44 +1,41 @@
-const mongoose = require('mongoose');
+const db = require('../config/db');
 
-const heroSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Please add a title'],
-    default: 'Redefining Luxury'
-  },
-  subtitle: {
-    type: String,
-    required: [true, 'Please add a subtitle'],
-    default: 'Discover the essentials of modern minimalism.'
-  },
-  buttonText: {
-    type: String,
-    required: [true, 'Please add button text'],
-    default: 'Explore Collection'
-  },
-  buttonLink: {
-    type: String,
-    required: [true, 'Please add button link'],
-    default: '/shop'
-  },
-  mediaType: {
-    type: String,
-    enum: ['video', 'image'],
-    required: [true, 'Please select media type'],
-    default: 'video'
-  },
-  mediaId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Media',
-    required: false
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-}, {
-  timestamps: true
-});
+function now() { return new Date().toISOString(); }
 
-const Hero = mongoose.model('Hero', heroSchema);
+function withMedia(row) {
+  if (!row) return null;
+  const mediaRow = row.mediaId
+    ? db.prepare('SELECT * FROM media WHERE id = ?').get(row.mediaId)
+    : null;
+  return {
+    ...row,
+    _id: row.id,
+    isActive: row.isActive === 1,
+    mediaId: mediaRow ? { ...mediaRow, _id: mediaRow.id } : row.mediaId,
+  };
+}
+
+const Hero = {
+  findActive() {
+    return withMedia(db.prepare('SELECT * FROM hero WHERE isActive = 1 LIMIT 1').get());
+  },
+
+  create({ title, subtitle, buttonText, buttonLink, mediaType, mediaId = null, isActive = true }) {
+    const ts = now();
+    const info = db.prepare(
+      `INSERT INTO hero (title, subtitle, buttonText, buttonLink, mediaType, mediaId, isActive, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(title, subtitle, buttonText, buttonLink, mediaType, mediaId, isActive ? 1 : 0, ts, ts);
+    return withMedia(db.prepare('SELECT * FROM hero WHERE id = ?').get(info.lastInsertRowid));
+  },
+
+  update(id, { title, subtitle, buttonText, buttonLink, mediaType, mediaId }) {
+    db.prepare(
+      `UPDATE hero SET title=?, subtitle=?, buttonText=?, buttonLink=?, mediaType=?, mediaId=?, updatedAt=? WHERE id=?`
+    ).run(title, subtitle, buttonText, buttonLink, mediaType, mediaId, now(), id);
+    return withMedia(db.prepare('SELECT * FROM hero WHERE id = ?').get(id));
+  },
+};
+
 module.exports = Hero;
+

@@ -4,20 +4,19 @@ const Media = require('../models/Media');
 // @desc    Get hero content
 // @route   GET /api/hero
 // @access  Public
-const getHero = async (req, res) => {
+const getHero = (req, res) => {
   try {
-    let hero = await Hero.findOne({ isActive: true }).populate('mediaId');
+    const hero = Hero.findActive();
 
     if (!hero) {
-      // Return default hero if none exists
-      hero = {
+      return res.status(200).json({
         title: 'Redefining Luxury',
         subtitle: 'Discover the essentials of modern minimalism.',
         buttonText: 'Explore Collection',
         buttonLink: '/shop',
         mediaType: 'video',
-        mediaId: null
-      };
+        mediaId: null,
+      });
     }
 
     res.status(200).json(hero);
@@ -29,7 +28,7 @@ const getHero = async (req, res) => {
 // @desc    Create or update hero content
 // @route   POST /api/admin/hero
 // @access  Private/Admin
-const updateHero = async (req, res) => {
+const updateHero = (req, res) => {
   try {
     const { title, subtitle, buttonText, buttonLink, mediaType, mediaId } = req.body;
 
@@ -37,40 +36,22 @@ const updateHero = async (req, res) => {
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
-    // Check if media exists if provided
     if (mediaId) {
-      const mediaExists = await Media.findById(mediaId);
+      const mediaExists = Media.findById(mediaId);
       if (!mediaExists) {
         return res.status(404).json({ message: 'Media not found' });
       }
     }
 
-    let hero = await Hero.findOne({ isActive: true });
+    const existing = Hero.findActive();
 
-    if (hero) {
-      // Update existing
-      hero.title = title;
-      hero.subtitle = subtitle;
-      hero.buttonText = buttonText;
-      hero.buttonLink = buttonLink;
-      hero.mediaType = mediaType;
-      hero.mediaId = mediaId || hero.mediaId;
-      await hero.save();
-    } else {
-      // Create new
-      hero = await Hero.create({
-        title,
-        subtitle,
-        buttonText,
-        buttonLink,
-        mediaType,
-        mediaId,
-        isActive: true
-      });
+    if (existing) {
+      const updated = Hero.update(existing.id, { title, subtitle, buttonText, buttonLink, mediaType, mediaId: mediaId || existing.id });
+      return res.status(200).json(updated);
     }
 
-    const populatedHero = await hero.populate('mediaId');
-    res.status(200).json(populatedHero);
+    const hero = Hero.create({ title, subtitle, buttonText, buttonLink, mediaType, mediaId, isActive: true });
+    res.status(200).json(hero);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -78,5 +59,6 @@ const updateHero = async (req, res) => {
 
 module.exports = {
   getHero,
-  updateHero
+  updateHero,
 };
+
