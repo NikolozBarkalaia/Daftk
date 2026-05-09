@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthContext';
-import { LayoutDashboard, FileText, Image as ImageIcon, LogOut, Settings, ShoppingBag, Film } from 'lucide-react';
+import { LayoutDashboard, FileText, Image as ImageIcon, LogOut, Settings, ShoppingBag, Film, ClipboardList } from 'lucide-react';
 
 const Sidebar = () => {
   const { logout } = useContext(AuthContext);
@@ -19,6 +19,7 @@ const Sidebar = () => {
     { name: 'Slider', path: '/admin/slider', icon: <ImageIcon size={20} /> },
     { name: 'Posts', path: '/admin/posts', icon: <FileText size={20} /> },
     { name: 'Media', path: '/admin/media', icon: <ImageIcon size={20} /> },
+    { name: 'Orders', path: '/admin/orders', icon: <ClipboardList size={20} /> },
   ];
 
   return (

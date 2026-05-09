@@ -11,6 +11,7 @@ import AdminMediaGallery from './pages/Admin/MediaGallery';
 import AdminHeroManager from './pages/Admin/HeroManager';
 import AdminSliderManager from './pages/Admin/SliderManager';
 import AdminProductsManager from './pages/Admin/ProductsManager';
+import AdminOrdersManager from './pages/Admin/OrdersManager';
 
 // Client Components & Pages (Placeholders since they were requested)
 import Layout from './components/Layout';
@@ -18,6 +19,9 @@ import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
 import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import OrderConfirmation from './pages/OrderConfirmation';
+import MyOrders from './pages/MyOrders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
@@ -36,6 +40,7 @@ function App() {
           <Route path="hero" element={<AdminHeroManager />} />
           <Route path="slider" element={<AdminSliderManager />} />
           <Route path="products" element={<AdminProductsManager />} />
+          <Route path="orders" element={<AdminOrdersManager />} />
         </Route>
       </Route>
 
@@ -45,6 +50,9 @@ function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<Product />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+        <Route path="/orders" element={<MyOrders />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />

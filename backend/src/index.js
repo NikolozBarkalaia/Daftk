@@ -26,6 +26,7 @@ app.use('/api/media', require('./routes/mediaRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/hero', require('./routes/heroRoutes'));
 app.use('/api/slider', require('./routes/sliderRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {

@@ -109,10 +109,10 @@ const OrderSummary = ({ subtotal, itemCount, onClear }) => {
         <span>€{subtotal.toFixed(2)}</span>
       </div>
 
-      <button className="btn cart-summary__checkout" disabled title="Checkout coming soon">
+      <Link to="/checkout" className="btn cart-summary__checkout">
         Checkout <ArrowRight size={17} />
-      </button>
-      <p className="cart-summary__checkout-note">Secure checkout — coming soon</p>
+      </Link>
+      <p className="cart-summary__checkout-note">Free shipping on all orders</p>
 
       <Link to="/shop" className="btn-outline cart-summary__continue">
         Continue Shopping

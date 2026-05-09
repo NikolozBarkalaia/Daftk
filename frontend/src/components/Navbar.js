@@ -1,12 +1,14 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, User } from 'lucide-react';
 import logo from "../assets/logo.jpeg";
 import { useCart } from '../context/CartContext';
 import MiniCart from './MiniCart';
+import { AuthContext } from '../context/AuthContext';
 
 const Navbar = () => {
   const { cartCount } = useCart();
+  const { user } = useContext(AuthContext);
   const [miniOpen, setMiniOpen] = useState(false);
   const hoverTimer = useRef(null);
 
@@ -36,6 +38,11 @@ const Navbar = () => {
         </div>
         <div className="nav-icons">
           <Link to="/login"><User size={20} strokeWidth={1.5} /></Link>
+          {user && (
+            <Link to="/orders" className="nav-orders-link" title="My Orders">
+              Orders
+            </Link>
+          )}
 
           {/* Cart icon + mini-cart dropdown */}
           <div

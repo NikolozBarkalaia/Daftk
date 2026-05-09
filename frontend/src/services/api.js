@@ -26,3 +26,10 @@ export const getMediaUrl = (url) => {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   return `http://localhost:5001${url}`;
 };
+
+// ─── Order API ───────────────────────────────────────────────
+export const createOrder = (orderData) => api.post('/orders', orderData);
+export const getMyOrders = () => api.get('/orders/myorders');
+export const getOrderById = (id) => api.get(`/orders/${id}`);
+export const getAllOrders = () => api.get('/orders');
+export const updateOrderStatus = (id, status) => api.put(`/orders/${id}/status`, { status });
