@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node --experimental-sqlite src/index.js",
-    "dev": "nodemon --exec 'node --experimental-sqlite' src/index.js",
+    "dev": "node --watch --experimental-sqlite src/index.js",
     "seed": "node --experimental-sqlite src/seeder.js"
   },
   "dependencies": {
