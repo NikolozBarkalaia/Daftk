@@ -1,19 +1,19 @@
-import React, { useRef, useState, useCallback } from 'react'
+import React, { useRef, useState, useCallback, useMemo } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Pagination, Autoplay, A11y } from 'swiper/modules'
+import { Pagination, Autoplay, A11y, Navigation } from 'swiper/modules'
 import MediaSlide from './MediaSlide'
 import MediaModal from './MediaModal'
 import { useModal } from '../hooks/useModal'
 
-/* ─── Thin arrow icon ─── */
+/* ─── Arrow icon ─── */
 function ArrowIcon({ dir }) {
     return (
         <svg
-            className="w-4 h-4 text-neutral-800"
+            className="w-4 h-4"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.4"
+            strokeWidth="1.6"
             strokeLinecap="round"
             strokeLinejoin="round"
         >
@@ -25,95 +25,115 @@ function ArrowIcon({ dir }) {
     )
 }
 
-/* ─── Reusable nav button ─── */
-function NavButton({ dir, onClick, disabled }) {
-    return (
-        <button
-            onClick={onClick}
-            disabled={disabled}
-            aria-label={dir === 'prev' ? 'Previous slide' : 'Next slide'}
-            className="
-                group
-                w-11 h-11 rounded-full
-                flex items-center justify-center
-                bg-white/90 backdrop-blur-sm
-                border border-neutral-200/80
-                shadow-[0_2px_16px_rgba(0,0,0,0.08)]
-                hover:shadow-[0_4px_28px_rgba(0,0,0,0.14)]
-                hover:border-amber-400/40
-                hover:scale-105
-                active:scale-95
-                transition-all duration-300 ease-out
-                disabled:opacity-30 disabled:pointer-events-none
-                focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50
-            "
-        >
-            <ArrowIcon dir={dir} />
-        </button>
-    )
+/* ─── Compute safe breakpoints — never show more slides than exist ─── */
+function getSafeBreakpoints(count) {
+    const cap = (n) => Math.min(n, count)
+    return {
+        0:    { slidesPerView: cap(1.15), spaceBetween: 16 },
+        480:  { slidesPerView: cap(1.4),  spaceBetween: 20 },
+        640:  { slidesPerView: cap(1.7),  spaceBetween: 24 },
+        900:  { slidesPerView: cap(2.3),  spaceBetween: 28 },
+        1100: { slidesPerView: cap(2.8),  spaceBetween: 32 },
+        1400: { slidesPerView: cap(3.2),  spaceBetween: 36 },
+    }
 }
 
 export default function MediaShowcaseSwiper({ items }) {
+    const prevRef   = useRef(null)
+    const nextRef   = useRef(null)
     const swiperRef = useRef(null)
     const { activeItem, isVisible, openModal, closeModal } = useModal()
     const [swiperReady, setSwiperReady] = useState(false)
 
+    const count = items?.length ?? 0
+
+    /*
+     * Loop is only safe when there are enough slides to fill at least 2 × the
+     * maximum visible slides. Below that threshold Swiper creates duplicate/blank
+     * slides and the active-slide offset is wrong.
+     */
+    const enableLoop = count >= 6
+
+    const breakpoints = useMemo(() => getSafeBreakpoints(count), [count])
+
     const handleOpen = useCallback((item) => {
-        swiperRef.current?.swiper?.autoplay?.stop()
+        swiperRef.current?.autoplay?.stop()
         openModal(item)
     }, [openModal])
 
     const handleClose = useCallback(() => {
         closeModal()
-        setTimeout(() => swiperRef.current?.swiper?.autoplay?.start(), 400)
+        setTimeout(() => swiperRef.current?.autoplay?.start(), 400)
     }, [closeModal])
 
-    const goPrev = useCallback(() => swiperRef.current?.swiper?.slidePrev(), [])
-    const goNext = useCallback(() => swiperRef.current?.swiper?.slideNext(), [])
+    /* Wire custom buttons after Swiper initialises */
+    const handleSwiper = useCallback((swiper) => {
+        swiperRef.current = swiper
+        if (prevRef.current && nextRef.current) {
+            swiper.params.navigation.prevEl = prevRef.current
+            swiper.params.navigation.nextEl = nextRef.current
+            swiper.navigation.init()
+            swiper.navigation.update()
+        }
+        setSwiperReady(true)
+    }, [])
+
+    if (count === 0) return null
+
+    /* Single item — just render the slide, no carousel chrome */
+    if (count === 1) {
+        return (
+            <div className="featured-single">
+                <MediaSlide item={items[0]} onOpen={openModal} />
+                <MediaModal item={activeItem} isVisible={isVisible} onClose={closeModal} />
+            </div>
+        )
+    }
 
     return (
-        <div className="relative">
+        <div className="featured-carousel">
             <Swiper
-                ref={swiperRef}
-                onSwiper={() => setSwiperReady(true)}
-                modules={[Pagination, Autoplay, A11y]}
+                onSwiper={handleSwiper}
+                modules={[Pagination, Autoplay, A11y, Navigation]}
                 className="luxury-swiper"
-                loop={true}
+                loop={enableLoop}
                 grabCursor={true}
                 centeredSlides={true}
-                slidesPerView={1.15}
-                spaceBetween={20}
-                speed={750}
-                /* navigation handled by custom buttons — no default arrows */
+                slideToClickedSlide={true}
+                watchOverflow={true}
+                watchSlidesProgress={true}
+                speed={700}
+                breakpoints={breakpoints}
                 pagination={{ clickable: true }}
-                autoplay={{ delay: 4500, disableOnInteraction: false, pauseOnMouseEnter: true }}
-                a11y={{ prevSlideMessage: 'Previous slide', nextSlideMessage: 'Next slide' }}
-                breakpoints={{
-                    480:  { slidesPerView: 1.3,  spaceBetween: 24 },
-                    640:  { slidesPerView: 1.6,  spaceBetween: 28 },
-                    900:  { slidesPerView: 2.2,  spaceBetween: 32 },
-                    1280: { slidesPerView: 2.8,  spaceBetween: 36 },
-                    1600: { slidesPerView: 3.2,  spaceBetween: 40 },
+                autoplay={{
+                    delay: 4500,
+                    disableOnInteraction: false,
+                    pauseOnMouseEnter: true,
                 }}
+                navigation={{
+                    prevEl: prevRef.current,
+                    nextEl: nextRef.current,
+                }}
+                a11y={{ prevSlideMessage: 'Previous slide', nextSlideMessage: 'Next slide' }}
             >
                 {items.map((item) => (
-                    <SwiperSlide key={item.id}>
-                        <MediaSlide item={item} onOpen={handleOpen} />
+                    <SwiperSlide key={item.id} className="featured-slide">
+                        {({ isActive, isNext, isPrev }) => (
+                            <div className={`featured-slide__inner ${isActive ? 'is-active' : ''} ${(isNext || isPrev) ? 'is-adjacent' : ''}`}>
+                                <MediaSlide item={item} onOpen={handleOpen} />
+                            </div>
+                        )}
                     </SwiperSlide>
                 ))}
             </Swiper>
 
-            {/* Custom nav — positioned over the swiper, vertically centred on the slide image */}
-            {swiperReady && (
-                <div className="pointer-events-none absolute inset-x-0 top-0 bottom-[52px] z-10 flex items-center justify-between px-2 sm:px-4">
-                    <div className="pointer-events-auto">
-                        <NavButton dir="prev" onClick={goPrev} />
-                    </div>
-                    <div className="pointer-events-auto">
-                        <NavButton dir="next" onClick={goNext} />
-                    </div>
-                </div>
-            )}
+            {/* Custom prev/next — always rendered so refs are stable */}
+            <button ref={prevRef} className="featured-nav featured-nav--prev" aria-label="Previous slide">
+                <ArrowIcon dir="prev" />
+            </button>
+            <button ref={nextRef} className="featured-nav featured-nav--next" aria-label="Next slide">
+                <ArrowIcon dir="next" />
+            </button>
 
             <MediaModal item={activeItem} isVisible={isVisible} onClose={handleClose} />
         </div>

@@ -1267,61 +1267,164 @@ ul {
 }
 .pdp-in-cart__remove:hover { color: #c0392b; }
 
-/* swiper styles */
+/* ─── Featured Pieces Carousel ───────────────────────────── */
 
+/* Single-item fallback */
+.featured-single {
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+/* Carousel wrapper — horizontal overflow clip + room for pagination */
+.featured-carousel {
+  position: relative;
+  /* side padding so adjacent slides peek in without being clipped */
+  padding: 0 0 52px;
+  /* clip slides but keep nav buttons visible outside */
+  isolation: isolate;
+}
+
+/* ── Swiper overrides ── */
 .luxury-swiper {
   width: 100%;
-  padding-bottom: 52px !important;
+  overflow: visible !important;   /* let peek slides show outside container */
+  padding-bottom: 0 !important;   /* pagination lives outside the swiper */
 }
 
-.luxury-swiper .swiper-slide {
-  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+/* Clip the slides themselves so they don't bleed into page content */
+.featured-carousel::before {
+  content: '';
+  position: absolute;
+  inset: 0 -20px 52px;   /* match spaceBetween max */
+  pointer-events: none;
+  z-index: 0;
+}
+
+/*
+ * Opacity only — NO scale transform.
+ * CSS scale on slides fights Swiper's layout measurement and causes
+ * misalignment, gaps and wrong centeredSlides math.
+ */
+.featured-slide {
+  transition: opacity 0.5s ease;
   opacity: 0.45;
-  transform: scale(0.92);
-  will-change: transform, opacity;
+  will-change: opacity;
 }
 
-.luxury-swiper .swiper-slide-active {
+.featured-slide.swiper-slide-active,
+.featured-slide.swiper-slide-duplicate-active {
   opacity: 1;
-  transform: scale(1);
 }
 
-.luxury-swiper .swiper-slide-prev,
-.luxury-swiper .swiper-slide-next {
-  opacity: 0.65;
-  transform: scale(0.96);
+.featured-slide.swiper-slide-prev,
+.featured-slide.swiper-slide-next,
+.featured-slide.swiper-slide-duplicate-prev,
+.featured-slide.swiper-slide-duplicate-next {
+  opacity: 0.7;
 }
 
-.luxury-swiper .swiper-pagination {
-  bottom: 0 !important;
+/* Slide inner — used for JS-driven active class */
+.featured-slide__inner {
+  transition: opacity 0.45s ease;
 }
 
-.luxury-swiper .swiper-pagination-bullet {
+/* ── Pagination ── */
+.featured-carousel .swiper-pagination {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  z-index: 10;
+}
+
+/* Hide Swiper's own bullets when overflow is false (single view) */
+.featured-carousel .swiper-pagination-lock {
+  display: none;
+}
+
+.featured-carousel .swiper-pagination-bullet {
   width: 6px;
   height: 6px;
+  border-radius: 9999px;
   background: gold;
-  opacity: 0.35;
-  border-radius: 50%;
-  transition: all 0.35s ease;
-  margin: 0 5px !important;
+  opacity: 0.3;
+  margin: 0 !important;
+  transition: width 0.3s ease, opacity 0.3s ease;
+  flex-shrink: 0;
 }
 
-.luxury-swiper .swiper-pagination-bullet-active {
+.featured-carousel .swiper-pagination-bullet-active {
   opacity: 1;
-  width: 28px;
+  width: 26px;
   border-radius: 3px;
 }
 
-/* Hide default Swiper arrows — replaced by custom React NavButton components */
+/* ── Nav buttons ── */
+/* Kill Swiper's default arrows completely */
 .luxury-swiper .swiper-button-prev,
 .luxury-swiper .swiper-button-next {
   display: none !important;
 }
 
+.featured-nav {
+  position: absolute;
+  top: 50%;               /* vertical centre of the slide image area */
+  transform: translateY(calc(-50% - 26px)); /* offset for 52px pagination */
+  z-index: 20;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(200,200,200,0.7);
+  box-shadow: 0 2px 14px rgba(0,0,0,0.10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1a1a1a;
+  transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.featured-nav:hover {
+  box-shadow: 0 4px 22px rgba(0,0,0,0.16);
+  border-color: rgba(180,150,50,0.4);
+  transform: translateY(calc(-50% - 26px)) scale(1.06);
+}
+
+.featured-nav:active {
+  transform: translateY(calc(-50% - 26px)) scale(0.96);
+}
+
+/* Swiper adds .swiper-button-disabled when at start/end (no-loop) */
+.featured-nav.swiper-button-disabled {
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+/* Hide both nav buttons when there's nothing to navigate */
+.featured-nav.swiper-button-lock {
+  display: none;
+}
+
+.featured-nav--prev { left: 4px; }
+.featured-nav--next { right: 4px; }
+
+@media (min-width: 640px) {
+  .featured-nav--prev { left: 8px; }
+  .featured-nav--next { right: 8px; }
+}
+
+/* Grab cursor */
 .luxury-swiper .swiper-wrapper {
   cursor: grab;
 }
-
 .luxury-swiper .swiper-wrapper:active {
   cursor: grabbing;
 }
