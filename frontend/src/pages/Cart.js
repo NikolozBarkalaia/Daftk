@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, Tag } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { getMediaUrl } from '../services/api';
 import { useCart } from '../context/CartContext';
 
@@ -87,23 +87,6 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
 
 /* ─── Order Summary ───────────────────────────────────────── */
 const OrderSummary = ({ subtotal, itemCount, onClear }) => {
-  const [coupon, setCoupon]           = useState('');
-  const [couponApplied, setCouponApplied] = useState(false);
-  const [couponError, setCouponError] = useState('');
-
-  const discount = couponApplied ? subtotal * 0.1 : 0;
-  const total    = subtotal - discount;
-
-  const handleCoupon = (e) => {
-    e.preventDefault();
-    if (coupon.trim().toUpperCase() === 'DAFTK10') {
-      setCouponApplied(true);
-      setCouponError('');
-    } else {
-      setCouponError('Invalid promo code');
-    }
-  };
-
   return (
     <aside className="cart-summary">
       <h2 className="cart-summary__title">Order Summary</h2>
@@ -113,53 +96,18 @@ const OrderSummary = ({ subtotal, itemCount, onClear }) => {
           <span>Items ({itemCount})</span>
           <span>€{subtotal.toFixed(2)}</span>
         </div>
-        {couponApplied && (
-          <div className="cart-summary__line cart-summary__line--discount">
-            <span>Discount (10%)</span>
-            <span>−€{discount.toFixed(2)}</span>
-          </div>
-        )}
         <div className="cart-summary__line">
           <span>Shipping</span>
           <span className="cart-summary__free">Complimentary</span>
         </div>
       </div>
 
-      <form onSubmit={handleCoupon} className="cart-coupon">
-        <div className="cart-coupon__wrap">
-          <Tag size={15} className="cart-coupon__icon" />
-          <input
-            type="text"
-            value={coupon}
-            onChange={(e) => { setCoupon(e.target.value); setCouponError(''); }}
-            placeholder="Promo code"
-            className="cart-coupon__input"
-            disabled={couponApplied}
-          />
-          <button
-            type="submit"
-            className="cart-coupon__btn"
-            disabled={couponApplied || !coupon.trim()}
-          >
-            {couponApplied ? '✓' : 'Apply'}
-          </button>
-        </div>
-        {couponApplied && <p className="cart-coupon__success">10% discount applied!</p>}
-        {couponError   && <p className="cart-coupon__error">{couponError}</p>}
-      </form>
-
       <div className="cart-summary__divider" />
 
       <div className="cart-summary__total">
         <span>Total</span>
-        <span>€{total.toFixed(2)}</span>
+        <span>€{subtotal.toFixed(2)}</span>
       </div>
-
-      {discount > 0 && (
-        <p className="cart-summary__savings">
-          You're saving €{discount.toFixed(2)}
-        </p>
-      )}
 
       <button className="btn cart-summary__checkout" disabled title="Checkout coming soon">
         Checkout <ArrowRight size={17} />

@@ -163,15 +163,15 @@ const Product = () => {
                 <Minus size={18} />
               </button>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={quantity}
                 onChange={(e) => {
                   const val = parseInt(e.target.value);
-                  if (val > 0) handleQuantityChange(val);
+                  if (!isNaN(val) && val > 0) handleQuantityChange(val);
                 }}
                 className="w-12 text-center border-none outline-none"
-                min="1"
-                max={product.stock}
               />
               <button
                 onClick={() => handleQuantityChange(quantity + 1)}
@@ -224,14 +224,14 @@ const Product = () => {
           <button
             onClick={addToCartHandler}
             disabled={product.stock <= 0}
-            className={`btn w-full flex items-center justify-center gap-2 mb-6 transition-all ${added ? 'bg-green-700 border-green-700' : ''}`}
+            className={`btn w-full !flex items-center justify-center gap-2 mb-3 whitespace-nowrap transition-all ${added ? 'bg-green-700 border-green-700' : ''}`}
           >
-            {added ? <Check size={20} /> : <ShoppingCart size={20} />}
+            {added ? <Check size={18} /> : <ShoppingCart size={18} />}
             {product.stock <= 0 ? 'Out of Stock' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
           </button>
 
           {/* Continue Shopping */}
-          <Link to="/shop" className="btn-outline block text-center">
+          <Link to="/shop" className="btn btn-outline w-full !flex items-center justify-center gap-2 whitespace-nowrap">
             Continue Shopping
           </Link>
         </div>
