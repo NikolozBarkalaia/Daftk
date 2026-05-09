@@ -1,0 +1,384 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'swiper/css';
+@import 'swiper/css/navigation';
+@import 'swiper/css/pagination';
+
+:root {
+  --color-black: #050505;
+  --color-white: #ffffff;
+  --color-gray-light: #f5f5f5;
+  --color-gray-dark: #333333;
+  --color-border: #e0e0e0;
+
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  --transition-fast: 0.2s ease;
+  --transition-slow: 0.4s ease;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-white);
+  color: var(--color-black);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-gray-dark);
+}
+
+ul {
+  list-style: none;
+}
+
+/* Utilities */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.btn {
+  display: inline-block;
+  padding: 12px 24px;
+  background-color: var(--color-black);
+  color: var(--color-white);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid gold;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn:hover {
+  background-color: var(--color-white);
+  color: var(--color-black);
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: var(--color-black);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-black);
+  color: var(--color-white);
+}
+
+.input-field {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.input-field:focus {
+  border-color: var(--color-black);
+}
+
+.page-title {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+/* Navbar */
+.navbar {
+  border-bottom: 1px solid var(--color-border);
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  background-color: var(--color-white);
+  z-index: 100;
+}
+
+/* Media lightbox — must sit above sticky navbar (z-100) */
+.media-modal-root {
+  z-index: 200;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-logo {
+  font-family: var(--font-serif);
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-links a {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 500;
+}
+
+.nav-icons {
+  display: flex;
+  gap: 1.5rem;
+}
+
+/* Layout */
+.main-content {
+  min-height: calc(100vh - 200px);
+  padding: 40px 0;
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--color-border);
+  padding: 40px 0;
+  text-align: center;
+  color: var(--color-gray-dark);
+  font-size: 0.9rem;
+}
+
+/* Product Grid */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 30px;
+}
+
+.product-card {
+  transition: transform var(--transition-fast);
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+.product-image {
+  width: 100%;
+  height: 350px;
+  background-color: var(--color-gray-light);
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+.product-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.product-name {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.product-price {
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+/* Product Details */
+.product-details-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+}
+
+.product-details-image {
+  width: 100%;
+  height: 600px;
+  background-color: var(--color-gray-light);
+  object-fit: cover;
+}
+
+.product-details-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.product-details-title {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.product-details-price {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  font-weight: 600;
+}
+
+.product-details-description {
+  color: var(--color-gray-dark);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+/* Auth Forms */
+.auth-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  border: 1px solid var(--color-border);
+}
+
+.auth-title {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Hero Section */
+.hero {
+  height: 70vh;
+  background-color: var(--color-gray-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.hero-content h1 {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.hero-content p {
+  font-size: 1.2rem;
+  margin-bottom: 2rem;
+}
+
+/* Cart */
+.cart-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+.cart-table th,
+.cart-table td {
+  padding: 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cart-summary {
+  width: 300px;
+  margin-left: auto;
+  border: 1px solid var(--color-border);
+  padding: 20px;
+}
+
+.cart-summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cart-summary-total {
+  font-weight: 600;
+  font-size: 1.2rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+
+
+/* swiper styles */
+
+.luxury-swiper {
+  width: 100%;
+  padding-bottom: 52px !important;
+}
+
+.luxury-swiper .swiper-slide {
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  opacity: 0.45;
+  transform: scale(0.92);
+  will-change: transform, opacity;
+}
+
+.luxury-swiper .swiper-slide-active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.luxury-swiper .swiper-slide-prev,
+.luxury-swiper .swiper-slide-next {
+  opacity: 0.65;
+  transform: scale(0.96);
+}
+
+.luxury-swiper .swiper-pagination {
+  bottom: 0 !important;
+}
+
+.luxury-swiper .swiper-pagination-bullet {
+  width: 6px;
+  height: 6px;
+  background: gold;
+  opacity: 0.35;
+  border-radius: 50%;
+  transition: all 0.35s ease;
+  margin: 0 5px !important;
+}
+
+.luxury-swiper .swiper-pagination-bullet-active {
+  opacity: 1;
+  width: 28px;
+  border-radius: 3px;
+}
+
+/* Hide default Swiper arrows — replaced by custom React NavButton components */
+.luxury-swiper .swiper-button-prev,
+.luxury-swiper .swiper-button-next {
+  display: none !important;
+}
+
+.luxury-swiper .swiper-wrapper {
+  cursor: grab;
+}
+
+.luxury-swiper .swiper-wrapper:active {
+  cursor: grabbing;
+}
