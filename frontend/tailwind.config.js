@@ -15,6 +15,7 @@ module.exports = {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         serif: ['Playfair Display', 'serif'],
+        accent: ['Cormorant Garamond', 'serif'],
       }
     },
   },

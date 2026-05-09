@@ -15,6 +15,7 @@
 
   --font-serif: 'Playfair Display', serif;
   --font-sans: 'Inter', sans-serif;
+  --font-accent: 'Cormorant Garamond', serif;
 
   --transition-fast: 0.2s ease;
   --transition-slow: 0.4s ease;
@@ -126,9 +127,9 @@ ul {
   z-index: 100;
 }
 
-/* Media lightbox — must sit above sticky navbar (z-100) */
+/* Media lightbox — must sit above navbar (100), mini-cart (500), and toasts (9999) */
 .media-modal-root {
-  z-index: 200;
+  z-index: 10000;
 }
 
 .nav-container {

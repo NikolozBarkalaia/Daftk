@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function MediaModal({ item, isVisible, onClose }) {
     const videoRef = useRef(null)
@@ -16,11 +17,11 @@ export default function MediaModal({ item, isVisible, onClose }) {
 
     const isVideo = item.type === 'video'
 
-    return (
-        /* Portal-level overlay — z-[200] beats navbar z-100 */
+    return createPortal(
+        /* Rendered into document.body — escapes all parent stacking contexts */
         <div
             className={`
-                fixed inset-0 z-[200] flex items-center justify-center
+                fixed inset-0 z-[10000] flex items-center justify-center
                 transition-opacity duration-500 ease-out
                 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}
             `}
@@ -103,5 +104,5 @@ export default function MediaModal({ item, isVisible, onClose }) {
                 </p>
             </div>
         </div>
-    )
+    , document.body)
 }
