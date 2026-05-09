@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus } from 'lucide-react';
+import { getMediaUrl } from '../services/api';
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState([]);
@@ -81,7 +82,7 @@ const Cart = () => {
                           <div className="flex gap-3 items-start">
                             {item.image && (
                               <img
-                                src={`http://localhost:5000${item.image}`}
+                                src={getMediaUrl(item.image)}
                                 alt={item.name}
                                 className="w-16 h-16 object-cover rounded"
                               />

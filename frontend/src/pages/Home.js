@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MediaShowcaseSwiper from '../components/MediaShowcaseSwiper';
-import api from '../services/api';
+import api, { getMediaUrl } from '../services/api';
 
 const Home = () => {
   const [hero, setHero] = useState(null);
@@ -28,8 +28,8 @@ const Home = () => {
         return {
           id: item._id,
           type: item.mediaType,
-          src: `http://localhost:5000${mediaUrl}`,
-          thumb: `http://localhost:5000${mediaUrl}`,
+          src: getMediaUrl(mediaUrl),
+          thumb: getMediaUrl(mediaUrl),
           alt: item.title,
           label: item.subtitle || '',
           caption: item.title,
@@ -55,7 +55,7 @@ const Home = () => {
         <section className="hero" style={{ position: 'relative', overflow: 'hidden' }}>
           {hero.mediaType === 'video' && hero.mediaId && (
             <video
-              src={`http://localhost:5000${hero.mediaId.url}`}
+              src={getMediaUrl(hero.mediaId.url)}
               autoPlay
               loop
               muted
@@ -73,7 +73,7 @@ const Home = () => {
           )}
           {hero.mediaType === 'image' && hero.mediaId && (
             <img
-              src={`http://localhost:5000${hero.mediaId.url}`}
+              src={getMediaUrl(hero.mediaId.url)}
               alt={hero.title}
               style={{
                 position: 'absolute',

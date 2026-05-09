@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import { Plus, Trash2, Edit2, Upload } from 'lucide-react';
 
 const ProductsManager = () => {
@@ -343,7 +343,7 @@ const ProductsManager = () => {
                   {formData.imageUrls.map((url, index) => (
                     <div key={index} className="relative">
                       <img
-                        src={`http://localhost:5000${url}`}
+                        src={getMediaUrl(url)}
                         alt={`Product ${index + 1}`}
                         className="w-full h-40 object-cover rounded"
                       />
@@ -386,7 +386,7 @@ const ProductsManager = () => {
               <div className="flex items-start gap-4">
                 {product.imageUrls && product.imageUrls.length > 0 && (
                   <img
-                    src={`http://localhost:5000${product.imageUrls[0]}`}
+                    src={getMediaUrl(product.imageUrls[0])}
                     alt={product.name}
                     className="w-24 h-24 object-cover rounded"
                   />

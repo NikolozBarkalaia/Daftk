@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import FileUploader from '../../components/Admin/FileUploader';
 import { Trash2, Copy } from 'lucide-react';
 
@@ -56,7 +56,7 @@ const MediaGallery = () => {
 
   const copyToClipboard = (url) => {
     // Construct full URL if needed, or just relative
-    navigator.clipboard.writeText(`http://localhost:5000${url}`);
+    navigator.clipboard.writeText(getMediaUrl(url));
     alert('URL copied to clipboard!');
   };
 
@@ -77,9 +77,9 @@ const MediaGallery = () => {
           <div key={item._id} className="bg-white border border-border rounded-lg overflow-hidden group">
             <div className="h-48 bg-gray-light flex items-center justify-center relative">
               {item.type === 'video' ? (
-                <video src={`http://localhost:5000${item.url}`} className="max-h-full object-contain" />
+                <video src={getMediaUrl(item.url)} className="max-h-full object-contain" />
               ) : (
-                <img src={`http://localhost:5000${item.url}`} alt={item.filename} className="max-h-full object-contain" />
+                <img src={getMediaUrl(item.url)} alt={item.filename} className="max-h-full object-contain" />
               )}
               
               {/* Overlay Actions */}

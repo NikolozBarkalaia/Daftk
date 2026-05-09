@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import { Film } from 'lucide-react';
 
 const HeroManager = () => {
@@ -199,13 +199,13 @@ const HeroManager = () => {
               <p className="text-sm text-gray-dark mb-3">Current {hero.mediaType}:</p>
               {hero.mediaType === 'video' ? (
                 <video
-                  src={`http://localhost:5000${media.find(m => m._id === hero.mediaId)?.url}`}
+                  src={getMediaUrl(media.find(m => m._id === hero.mediaId)?.url)}
                   controls
                   className="w-full max-h-48 rounded"
                 />
               ) : (
                 <img
-                  src={`http://localhost:5000${media.find(m => m._id === hero.mediaId)?.url}`}
+                  src={getMediaUrl(media.find(m => m._id === hero.mediaId)?.url)}
                   alt="Hero preview"
                   className="w-full max-h-48 object-cover rounded"
                 />

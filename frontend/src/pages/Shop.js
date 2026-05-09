@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../services/api';
+import api, { getMediaUrl } from '../services/api';
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
@@ -40,7 +40,7 @@ const Shop = () => {
                   className="product-image" 
                   style={{ 
                     backgroundImage: product.imageUrls?.length > 0 
-                      ? `url(http://localhost:5000${product.imageUrls[0]})`
+                      ? `url(${getMediaUrl(product.imageUrls[0])})`
                       : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
                     backgroundSize: 'cover', 
                     backgroundPosition: 'center' 

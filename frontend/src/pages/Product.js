@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import api from '../services/api';
+import api, { getMediaUrl } from '../services/api';
 import { ShoppingCart, Minus, Plus } from 'lucide-react';
 
 const Product = () => {
@@ -101,7 +101,7 @@ const Product = () => {
             className="product-details-image mb-4"
             style={{
               backgroundImage: mainImage 
-                ? `url(http://localhost:5000${mainImage})`
+                ? `url(${getMediaUrl(mainImage)})`
                 : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
@@ -127,7 +127,7 @@ const Product = () => {
                       : 'border-border hover:border-gray-dark'
                   }`}
                   style={{
-                    backgroundImage: `url(http://localhost:5000${url})`,
+                    backgroundImage: `url(${getMediaUrl(url)})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   }}
@@ -239,7 +239,7 @@ const Product = () => {
                   className="product-image"
                   style={{
                     backgroundImage: p.imageUrls?.length > 0
-                      ? `url(http://localhost:5000${p.imageUrls[0]})`
+                      ? `url(${getMediaUrl(p.imageUrls[0])})`
                       : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
