@@ -5,9 +5,9 @@ export default function MediaSlide({ item, onOpen }) {
     const isVideo = item.type === 'video'
 
     return (
-        <article className="relative w-full overflow-hidden rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.10)] group bg-gray-100">
+        <article className="relative w-full group">
             <div
-                className="relative overflow-hidden cursor-pointer"
+                className="relative overflow-hidden cursor-pointer rounded-[6px] shadow-[0_12px_40px_rgba(0,0,0,0.12)]"
                 style={{ aspectRatio: '3/4' }}
                 onClick={() => onOpen(item)}
                 role="button"
@@ -62,19 +62,20 @@ export default function MediaSlide({ item, onOpen }) {
                 )}
 
                 <div className="absolute top-4 left-4">
-                    <span className="text-[10px] tracking-[0.18em] uppercase text-white/90 bg-black/30 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                    <span className="text-[10px] tracking-[0.18em] uppercase text-white/90 bg-black/40 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full">
                         {item.label}
                     </span>
                 </div>
             </div>
 
-            <div className="px-5 py-4">
-                <p className="text-lg font-light tracking-wide text-gray-900 leading-snug">{item.caption}</p>
-                <div className="mt-1 flex items-center gap-2">
-                    <div className="w-4 h-px bg-amber-500" />
-                    <span className="text-[11px] tracking-[0.12em] uppercase text-gray-500">
-                        {isVideo ? 'Film' : 'Editorial'}
+            <div className="px-3 py-5 text-center">
+                <h3 className="text-2xl font-accent italic text-gray-900 leading-snug">{item.caption}</h3>
+                <div className="mt-2 flex items-center justify-center gap-2">
+                    <div className="w-6 h-px bg-amber-600/60" />
+                    <span className="text-[9px] tracking-[0.2em] font-medium uppercase text-gray-400">
+                        {isVideo ? 'Film Collection' : 'Editorial Feature'}
                     </span>
+                    <div className="w-6 h-px bg-amber-600/60" />
                 </div>
             </div>
         </article>

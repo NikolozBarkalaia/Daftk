@@ -1280,7 +1280,7 @@ ul {
 .featured-carousel {
   position: relative;
   /* side padding so adjacent slides peek in without being clipped */
-  padding: 0 0 52px;
+  padding: 0; 
   /* clip slides but keep nav buttons visible outside */
   isolation: isolate;
 }
@@ -1289,80 +1289,77 @@ ul {
 .luxury-swiper {
   width: 100%;
   overflow: visible !important;   /* let peek slides show outside container */
-  padding-bottom: 0 !important;   /* pagination lives outside the swiper */
+}
+
+/* Fade mask — applied to swiper wrapper only so nav arrows remain fully visible */
+.featured-swiper-mask {
+  /* Linear fade out on the edges, fully visible in the center */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 10%,
+    black 90%,
+    transparent 100%
+  );
 }
 
 /* Clip the slides themselves so they don't bleed into page content */
 .featured-carousel::before {
   content: '';
   position: absolute;
-  inset: 0 -20px 52px;   /* match spaceBetween max */
+  inset: 0 -20px 0;   /* match spaceBetween max */
   pointer-events: none;
   z-index: 0;
 }
 
 /*
- * Opacity only — NO scale transform.
- * CSS scale on slides fights Swiper's layout measurement and causes
- * misalignment, gaps and wrong centeredSlides math.
+ * Opacity and Blur filters to fade out slides outside the main view.
+ * CSS scale on `.featured-slide` fights Swiper's layout, so we scale `.featured-slide__inner` instead.
  */
 .featured-slide {
-  transition: opacity 0.5s ease;
-  opacity: 0.45;
-  will-change: opacity;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  filter: blur(8px);
+  will-change: opacity, filter;
+  pointer-events: none;
 }
 
 .featured-slide.swiper-slide-active,
 .featured-slide.swiper-slide-duplicate-active {
   opacity: 1;
+  filter: blur(0px);
+  pointer-events: auto;
 }
 
 .featured-slide.swiper-slide-prev,
 .featured-slide.swiper-slide-next,
 .featured-slide.swiper-slide-duplicate-prev,
 .featured-slide.swiper-slide-duplicate-next {
-  opacity: 0.7;
+  opacity: 0.6;
+  filter: blur(1.5px);
+  pointer-events: auto;
 }
 
-/* Slide inner — used for JS-driven active class */
+/* Slide inner — used for safe scale animations */
 .featured-slide__inner {
-  transition: opacity 0.45s ease;
+  transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: scale(0.85);
+  transform-origin: center;
 }
 
-/* ── Pagination ── */
-.featured-carousel .swiper-pagination {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  z-index: 10;
+.featured-slide__inner.is-active {
+  transform: scale(1);
 }
 
-/* Hide Swiper's own bullets when overflow is false (single view) */
-.featured-carousel .swiper-pagination-lock {
-  display: none;
-}
-
-.featured-carousel .swiper-pagination-bullet {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: gold;
-  opacity: 0.3;
-  margin: 0 !important;
-  transition: width 0.3s ease, opacity 0.3s ease;
-  flex-shrink: 0;
-}
-
-.featured-carousel .swiper-pagination-bullet-active {
-  opacity: 1;
-  width: 26px;
-  border-radius: 3px;
+.featured-slide__inner.is-adjacent {
+  transform: scale(0.92);
 }
 
 /* ── Nav buttons ── */
@@ -1374,33 +1371,34 @@ ul {
 
 .featured-nav {
   position: absolute;
-  top: 50%;               /* vertical centre of the slide image area */
-  transform: translateY(calc(-50% - 26px)); /* offset for 52px pagination */
+  top: 50%;
+  transform: translateY(-50%); 
   z-index: 20;
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(200,200,200,0.7);
-  box-shadow: 0 2px 14px rgba(0,0,0,0.10);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(230, 230, 230, 0.9);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #1a1a1a;
-  transition: opacity 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  color: #000;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .featured-nav:hover {
-  box-shadow: 0 4px 22px rgba(0,0,0,0.16);
-  border-color: rgba(180,150,50,0.4);
-  transform: translateY(calc(-50% - 26px)) scale(1.06);
+  background: #fff;
+  border-color: #fff;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  transform: translateY(-50%) scale(1.08);
 }
 
 .featured-nav:active {
-  transform: translateY(calc(-50% - 26px)) scale(0.96);
+  transform: translateY(-50%) scale(0.96);
 }
 
 /* Swiper adds .swiper-button-disabled when at start/end (no-loop) */

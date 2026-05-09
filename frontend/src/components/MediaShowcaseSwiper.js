@@ -1,6 +1,6 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
-import { Pagination, Autoplay, A11y, Navigation } from 'swiper/modules'
+import { Autoplay, A11y, Navigation } from 'swiper/modules'
 import MediaSlide from './MediaSlide'
 import MediaModal from './MediaModal'
 import { useModal } from '../hooks/useModal'
@@ -9,11 +9,11 @@ import { useModal } from '../hooks/useModal'
 function ArrowIcon({ dir }) {
     return (
         <svg
-            className="w-4 h-4"
+            className="w-5 h-5 text-gray-900"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth="1.6"
+            strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"
         >
@@ -92,9 +92,11 @@ export default function MediaShowcaseSwiper({ items }) {
 
     return (
         <div className="featured-carousel">
+            {/* Mask wrapper fades slides at edges; nav buttons sit outside it */}
+            <div className="featured-swiper-mask">
             <Swiper
                 onSwiper={handleSwiper}
-                modules={[Pagination, Autoplay, A11y, Navigation]}
+                modules={[Autoplay, A11y, Navigation]}
                 className="luxury-swiper"
                 loop={enableLoop}
                 grabCursor={true}
@@ -104,7 +106,6 @@ export default function MediaShowcaseSwiper({ items }) {
                 watchSlidesProgress={true}
                 speed={700}
                 breakpoints={breakpoints}
-                pagination={{ clickable: true }}
                 autoplay={{
                     delay: 4500,
                     disableOnInteraction: false,
@@ -126,6 +127,7 @@ export default function MediaShowcaseSwiper({ items }) {
                     </SwiperSlide>
                 ))}
             </Swiper>
+            </div>
 
             {/* Custom prev/next — always rendered so refs are stable */}
             <button ref={prevRef} className="featured-nav featured-nav--prev" aria-label="Previous slide">
