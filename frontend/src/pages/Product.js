@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import api, { getMediaUrl } from '../services/api';
-import { ShoppingCart, Minus, Plus } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Check } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 const Product = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { addToCart, removeFromCart, updateQuantity, isInCart, cartItems } = useCart();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [message, setMessage] = useState('');
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     fetchProductAndRelated();
@@ -35,7 +36,7 @@ const Product = () => {
       setRelatedProducts(related);
     } catch (error) {
       console.error('Error fetching product', error);
-      setMessage('Product not found');
+      setProduct(null);
     } finally {
       setLoading(false);
     }
@@ -47,53 +48,24 @@ const Product = () => {
     }
   };
 
-  const addToCart = () => {
-    try {
-      const cart = JSON.parse(localStorage.getItem('cart')) || [];
-      
-      // Check if product already in cart
-      const existingItem = cart.find(item => item._id === product._id);
-      
-      if (existingItem) {
-        existingItem.quantity += quantity;
-      } else {
-        cart.push({
-          _id: product._id,
-          name: product.name,
-          price: product.price,
-          image: product.imageUrls?.[0] || '',
-          quantity: quantity
-        });
-      }
-
-      localStorage.setItem('cart', JSON.stringify(cart));
-      setMessage('Added to cart successfully!');
-      setTimeout(() => {
-        navigate('/cart');
-      }, 1000);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      setMessage('Error adding to cart');
-    }
+  const addToCartHandler = () => {
+    addToCart(product, quantity);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   if (loading) return <div className="container py-20 text-center">Loading...</div>;
 
   if (!product) {
-    return <div className="container py-20 text-center text-gray-dark">{message || 'Product not found'}</div>;
+    return <div className="container py-20 text-center text-gray-dark">Product not found</div>;
   }
 
-  const mainImage = product.imageUrls?.[selectedImageIndex];
-  const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+  const mainImage    = product.imageUrls?.[selectedImageIndex];
+  const hasDiscount  = product.oldPrice && product.oldPrice > product.price;
+  const cartItem     = cartItems.find((i) => i._id === product._id);
 
   return (
     <div className="container pb-20">
-      {message && (
-        <div className={`p-4 rounded mb-6 ${message.includes('successfully') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {message}
-        </div>
-      )}
-
       <div className="product-details-container">
         {/* Image Gallery */}
         <div>
@@ -211,14 +183,51 @@ const Product = () => {
             </div>
           </div>
 
+          {/* In-cart status strip */}
+          {cartItem && (
+            <div className="pdp-in-cart">
+              <Check size={15} className="pdp-in-cart__icon" />
+              <span className="pdp-in-cart__msg">
+                {cartItem.quantity} {cartItem.quantity === 1 ? 'unit' : 'units'} in your bag
+              </span>
+              <div className="pdp-in-cart__actions">
+                <div className="pdp-in-cart__qty">
+                  <button
+                    className="pdp-in-cart__qty-btn"
+                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity - 1)}
+                    aria-label="Decrease cart quantity"
+                  >
+                    <Minus size={12} />
+                  </button>
+                  <span>{cartItem.quantity}</span>
+                  <button
+                    className="pdp-in-cart__qty-btn"
+                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity + 1)}
+                    disabled={cartItem.quantity >= (product.stock ?? 99)}
+                    aria-label="Increase cart quantity"
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
+                <Link to="/cart" className="pdp-in-cart__view">View Bag →</Link>
+                <button
+                  className="pdp-in-cart__remove"
+                  onClick={() => removeFromCart(product._id)}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Add to Cart Button */}
-          <button 
-            onClick={addToCart}
+          <button
+            onClick={addToCartHandler}
             disabled={product.stock <= 0}
-            className="btn w-full flex items-center justify-center gap-2 mb-6"
+            className={`btn w-full flex items-center justify-center gap-2 mb-6 transition-all ${added ? 'bg-green-700 border-green-700' : ''}`}
           >
-            <ShoppingCart size={20} />
-            {product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}
+            {added ? <Check size={20} /> : <ShoppingCart size={20} />}
+            {product.stock <= 0 ? 'Out of Stock' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
           </button>
 
           {/* Continue Shopping */}
