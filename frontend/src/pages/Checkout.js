@@ -53,7 +53,7 @@ const Checkout = () => {
           <Lock size={40} strokeWidth={0.8} />
           <h2>Sign in to continue</h2>
           <p>You need an account to place an order.</p>
-          <Link to="/login" state={{ from: '/checkout' }} className="btn">
+          <Link to="/admin/login" state={{ from: '/checkout' }} className="btn">
             Sign In
           </Link>
           <Link to="/register" className="checkout-auth-wall__register">
@@ -97,11 +97,13 @@ const Checkout = () => {
     };
 
     const items = cartItems.map((item) => ({
+      _id:       item._id, // Adding this to match Order model expectation
       productId: item._id,
       name:      item.name,
       price:     item.price,
       quantity:  item.quantity,
       image:     item.image,
+      selectedSize: item.selectedSize,
     }));
 
     try {
@@ -177,7 +179,7 @@ const Checkout = () => {
 
           <ul className="checkout-summary__items">
             {cartItems.map((item) => (
-              <li key={item._id} className="checkout-summary__item">
+              <li key={`${item._id}-${item.selectedSize || 'no-size'}`} className="checkout-summary__item">
                 <div className="checkout-summary__img-wrap">
                   {item.image ? (
                     <img src={getMediaUrl(item.image)} alt={item.name} className="checkout-summary__img" />
@@ -186,7 +188,10 @@ const Checkout = () => {
                   )}
                   <span className="checkout-summary__qty">{item.quantity}</span>
                 </div>
-                <span className="checkout-summary__name">{item.name}</span>
+                <div className="flex flex-col flex-1">
+                  <span className="checkout-summary__name">{item.name}</span>
+                  {item.selectedSize && <span className="text-[10px] text-gray-dark uppercase font-medium">Size: {item.selectedSize}</span>}
+                </div>
                 <span className="checkout-summary__price">€{(item.price * item.quantity).toFixed(2)}</span>
               </li>
             ))}

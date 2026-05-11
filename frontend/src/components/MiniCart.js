@@ -59,7 +59,7 @@ const MiniCart = ({ open, onClose }) => {
         <>
           <ul className="mini-cart__list">
             {preview.map((item) => (
-              <li key={item._id} className="mini-cart__item">
+              <li key={`${item._id}-${item.selectedSize || 'no-size'}`} className="mini-cart__item">
                 <Link
                   to={`/product/${item._id}`}
                   className="mini-cart__img-wrap"
@@ -88,6 +88,7 @@ const MiniCart = ({ open, onClose }) => {
                     {item.name}
                   </Link>
                   <div className="mini-cart__meta">
+                    {item.selectedSize && <span className="mini-cart__size">Size: {item.selectedSize}</span>}
                     <span className="mini-cart__qty">Qty: {item.quantity}</span>
                     <span className="mini-cart__price">€{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
@@ -95,7 +96,7 @@ const MiniCart = ({ open, onClose }) => {
 
                 <button
                   className="mini-cart__remove"
-                  onClick={() => removeFromCart(item._id)}
+                  onClick={() => removeFromCart(item._id, item.selectedSize)}
                   aria-label={`Remove ${item.name}`}
                 >
                   <Trash2 size={14} />

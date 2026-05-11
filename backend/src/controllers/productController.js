@@ -58,14 +58,14 @@ const getFeaturedProducts = (req, res) => {
 // @access  Private/Admin
 const createProduct = (req, res) => {
   try {
-    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls } = req.body;
+    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock } = req.body;
 
     if (!name || !description || !price || !category || stock === undefined) {
       return res.status(400).json({ message: 'Please provide required fields' });
     }
 
     const product = Product.create({
-      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls,
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock,
     });
 
     res.status(201).json(product);
@@ -79,7 +79,7 @@ const createProduct = (req, res) => {
 // @access  Private/Admin
 const updateProduct = (req, res) => {
   try {
-    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls } = req.body;
+    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock } = req.body;
 
     const product = Product.findById(req.params.id);
     if (!product) {
@@ -87,7 +87,7 @@ const updateProduct = (req, res) => {
     }
 
     const updated = Product.update(req.params.id, {
-      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls,
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock,
     });
 
     res.status(200).json(updated);

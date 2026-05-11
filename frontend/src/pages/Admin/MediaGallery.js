@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import api, { getMediaUrl } from '../../services/api';
 import FileUploader from '../../components/Admin/FileUploader';
 import { Trash2, Copy } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
 
 const MediaGallery = () => {
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const { showSuccess, showError, showInfo, confirm } = useNotification();
 
   const fetchMedia = async () => {
     try {
@@ -34,22 +36,32 @@ const MediaGallery = () => {
       await api.post('/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
+      showSuccess('File uploaded successfully');
       fetchMedia(); // Refresh gallery
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Upload failed');
+      showError('Upload failed');
     } finally {
       setUploading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this file?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Media',
+      message: 'Are you sure you want to delete this file? This action cannot be undone.',
+      confirmText: 'Delete',
+      danger: true
+    });
+
+    if (isConfirmed) {
       try {
         await api.delete(`/media/${id}`);
         setMedia(media.filter(m => m._id !== id));
+        showSuccess('File deleted');
       } catch (error) {
         console.error('Error deleting media:', error);
+        showError('Delete failed');
       }
     }
   };
@@ -57,7 +69,7 @@ const MediaGallery = () => {
   const copyToClipboard = (url) => {
     // Construct full URL if needed, or just relative
     navigator.clipboard.writeText(getMediaUrl(url));
-    alert('URL copied to clipboard!');
+    showInfo('URL copied to clipboard!');
   };
 
   if (loading) return <div>Loading media...</div>;

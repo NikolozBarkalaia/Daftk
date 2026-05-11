@@ -3,15 +3,18 @@ import { useParams, Link } from 'react-router-dom';
 import api, { getMediaUrl } from '../services/api';
 import { ShoppingCart, Minus, Plus, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Product = () => {
   const { id } = useParams();
   const { addToCart, removeFromCart, updateQuantity, isInCart, cartItems } = useCart();
+  const { showSuccess } = useNotification();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState('');
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
@@ -28,6 +31,16 @@ const Product = () => {
 
       setProduct(productRes.data);
 
+      // Default select first available size
+      const sStock = productRes.data.sizeStock || {};
+      const availableSizes = ['XS', 'S', 'M', 'L', 'XL'].filter(s => (sStock[s] || 0) > 0);
+      if (availableSizes.length > 0) {
+        setSelectedSize(availableSizes[0]);
+      } else {
+        // If no sizes have stock, default to first size (it will be disabled)
+        setSelectedSize('XS');
+      }
+
       // Find related products from same category
       const related = allProductsRes.data.products
         .filter(p => p._id !== id && p.category === productRes.data.category)
@@ -43,13 +56,23 @@ const Product = () => {
   };
 
   const handleQuantityChange = (newQuantity) => {
-    if (newQuantity > 0 && newQuantity <= (product?.stock || 1)) {
+    const maxStock = selectedSize && product?.sizeStock?.[selectedSize] !== undefined
+      ? product.sizeStock[selectedSize]
+      : (product?.stock || 1);
+
+    if (newQuantity > 0 && newQuantity <= maxStock) {
       setQuantity(newQuantity);
     }
   };
 
+  const handleSizeChange = (size) => {
+    setSelectedSize(size);
+    setQuantity(1); // Reset quantity when size changes
+  };
+
   const addToCartHandler = () => {
-    addToCart(product, quantity);
+    addToCart(product, quantity, selectedSize);
+    showSuccess(`${product.name} (${selectedSize}) added to bag`);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -60,25 +83,40 @@ const Product = () => {
     return <div className="container py-20 text-center text-gray-dark">Product not found</div>;
   }
 
-  const mainImage    = product.imageUrls?.[selectedImageIndex];
-  const hasDiscount  = product.oldPrice && product.oldPrice > product.price;
-  const cartItem     = cartItems.find((i) => i._id === product._id);
+  const mainImage = product.imageUrls?.[selectedImageIndex];
+  const hasDiscount = product.oldPrice && product.oldPrice > product.price;
+  const cartItem = cartItems.find((i) => i._id === product._id && i.selectedSize === selectedSize);
+
+  const sizes = ['XS', 'S', 'M', 'L', 'XL'];
+  const currentSizeStock = product.sizeStock?.[selectedSize] || 0;
 
   return (
     <div className="container pb-20">
       <div className="product-details-container">
         {/* Image Gallery */}
         <div>
-          <div 
+          <div
             className="product-details-image mb-4"
             style={{
-              backgroundImage: mainImage 
+              backgroundImage: mainImage
                 ? `url(${getMediaUrl(mainImage)})`
                 : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
               backgroundSize: 'cover',
               backgroundPosition: 'center'
             }}
           >
+            {product.hasBadge && product.badgeText && (
+              <div
+                className="absolute top-4 left-4 px-4 py-2 text-sm font-semibold uppercase rounded"
+                style={{
+                  backgroundColor: product.badgeBgColor,
+                  color: product.badgeTextColor,
+                }}
+              >
+                {product.badgeText}
+              </div>
+            )}
+
             {product.luxuryLabel && (
               <div className="absolute top-4 right-4 bg-amber-500 text-white px-4 py-2 text-sm font-semibold uppercase rounded">
                 {product.luxuryLabel}
@@ -93,11 +131,10 @@ const Product = () => {
                 <button
                   key={index}
                   onClick={() => setSelectedImageIndex(index)}
-                  className={`w-20 h-20 rounded border-2 transition-colors flex-shrink-0 ${
-                    selectedImageIndex === index 
-                      ? 'border-black' 
-                      : 'border-border hover:border-gray-dark'
-                  }`}
+                  className={`w-20 h-20 rounded border-2 transition-colors flex-shrink-0 ${selectedImageIndex === index
+                    ? 'border-black'
+                    : 'border-border hover:border-gray-dark'
+                    }`}
                   style={{
                     backgroundImage: `url(${getMediaUrl(url)})`,
                     backgroundSize: 'cover',
@@ -126,13 +163,50 @@ const Product = () => {
                 </>
               )}
             </div>
-            <p className={`text-sm font-medium ${product.stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+          </div>
+
+          {/* Size Selection */}
+          <div className="mb-6">
+            <label className="text-sm font-medium block mb-3 uppercase tracking-wider">Choose Size</label>
+            <div className="flex gap-3 flex-wrap">
+              {sizes.map((size) => {
+                const stock = product.sizeStock?.[size] || 0;
+                const isOutOfStock = stock <= 0;
+                const isSelected = selectedSize === size;
+
+                return (
+                  <button
+                    key={size}
+                    onClick={() => !isOutOfStock && handleSizeChange(size)}
+                    disabled={isOutOfStock}
+                    className={`
+                      min-w-[50px] h-[45px] flex items-center justify-center border transition-all duration-200 text-sm font-semibold
+                      ${isSelected
+                        ? 'border-black bg-black text-white'
+                        : isOutOfStock
+                          ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50 line-through'
+                          : 'border-border hover:border-black text-gray-800'}
+                    `}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-xs text-gray-dark">
+              {selectedSize && (
+                currentSizeStock > 0
+                  ? <span className="text-green-600 font-medium">{currentSizeStock} available in size {selectedSize}</span>
+                  : <span className="text-red-500 font-medium">Size {selectedSize} is currently unavailable</span>
+              )}
             </p>
           </div>
 
           {/* Description */}
           <p className="product-details-description mb-6">{product.description}</p>
+
+
+
 
           {/* Category & Tags */}
           <div className="mb-6">
@@ -150,6 +224,7 @@ const Product = () => {
               </div>
             )}
           </div>
+
 
           {/* Quantity Selector */}
           <div className="mb-6">
@@ -176,7 +251,7 @@ const Product = () => {
               <button
                 onClick={() => handleQuantityChange(quantity + 1)}
                 className="p-2 hover:bg-gray-light transition-colors"
-                disabled={quantity >= product.stock}
+                disabled={quantity >= currentSizeStock}
               >
                 <Plus size={18} />
               </button>
@@ -194,7 +269,7 @@ const Product = () => {
                 <div className="pdp-in-cart__qty">
                   <button
                     className="pdp-in-cart__qty-btn"
-                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity - 1)}
+                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity - 1, selectedSize)}
                     aria-label="Decrease cart quantity"
                   >
                     <Minus size={12} />
@@ -202,8 +277,8 @@ const Product = () => {
                   <span>{cartItem.quantity}</span>
                   <button
                     className="pdp-in-cart__qty-btn"
-                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity + 1)}
-                    disabled={cartItem.quantity >= (product.stock ?? 99)}
+                    onClick={() => updateQuantity(cartItem._id, cartItem.quantity + 1, selectedSize)}
+                    disabled={cartItem.quantity >= (currentSizeStock ?? 99)}
                     aria-label="Increase cart quantity"
                   >
                     <Plus size={12} />
@@ -212,7 +287,7 @@ const Product = () => {
                 <Link to="/cart" className="pdp-in-cart__view">View Bag →</Link>
                 <button
                   className="pdp-in-cart__remove"
-                  onClick={() => removeFromCart(product._id)}
+                  onClick={() => removeFromCart(product._id, selectedSize)}
                 >
                   Remove
                 </button>
@@ -223,14 +298,13 @@ const Product = () => {
           {/* Add to Cart Button */}
           <button
             onClick={addToCartHandler}
-            disabled={product.stock <= 0}
+            disabled={currentSizeStock <= 0}
             className={`btn w-full !flex items-center justify-center gap-2 mb-3 whitespace-nowrap transition-all ${added ? 'bg-green-700 border-green-700' : ''}`}
           >
             {added ? <Check size={18} /> : <ShoppingCart size={18} />}
-            {product.stock <= 0 ? 'Out of Stock' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
+            {currentSizeStock <= 0 ? 'Size Out of Stock' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
           </button>
 
-          {/* Continue Shopping */}
           <Link to="/shop" className="btn btn-outline w-full !flex items-center justify-center gap-2 whitespace-nowrap">
             Continue Shopping
           </Link>
@@ -238,42 +312,7 @@ const Product = () => {
       </div>
 
       {/* Related Products */}
-      {relatedProducts.length > 0 && (
-        <div className="mt-20">
-          <h2 className="text-2xl font-serif font-bold mb-8">Related Products</h2>
-          <div className="product-grid">
-            {relatedProducts.map((p) => (
-              <Link to={`/product/${p._id}`} key={p._id} className="product-card">
-                <div
-                  className="product-image"
-                  style={{
-                    backgroundImage: p.imageUrls?.length > 0
-                      ? `url(${getMediaUrl(p.imageUrls[0])})`
-                      : 'linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%)',
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  }}
-                >
-                  {p.luxuryLabel && (
-                    <div className="absolute top-2 right-2 bg-amber-500 text-white px-2 py-1 text-xs font-semibold uppercase rounded">
-                      {p.luxuryLabel}
-                    </div>
-                  )}
-                </div>
-                <div className="product-info">
-                  <span className="product-name">{p.name}</span>
-                  <div className="flex gap-2 items-center">
-                    <span className="product-price">€{p.price}</span>
-                    {p.oldPrice && (
-                      <span className="text-gray-dark line-through text-sm">€{p.oldPrice}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

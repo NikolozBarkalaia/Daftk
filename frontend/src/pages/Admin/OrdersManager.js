@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Package, RefreshCw } from 'lucide-react';
 import { getAllOrders, updateOrderStatus } from '../../services/api';
+import { useNotification } from '../../context/NotificationContext';
 
 const STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -17,6 +18,7 @@ const OrdersManager = () => {
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState('');
   const [updating, setUpdating] = useState(null); // order id being updated
+  const { showSuccess, showError } = useNotification();
 
   const fetchOrders = () => {
     setLoading(true);
@@ -32,9 +34,10 @@ const OrdersManager = () => {
     setUpdating(orderId);
     try {
       const { data } = await updateOrderStatus(orderId, status);
+      showSuccess(`Order #${orderId} updated to ${status}`);
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data : o)));
     } catch {
-      alert('Failed to update status.');
+      showError('Failed to update status.');
     } finally {
       setUpdating(null);
     }

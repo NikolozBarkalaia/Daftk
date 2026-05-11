@@ -1,24 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Check } from 'lucide-react';
 import api, { getMediaUrl } from '../services/api';
-import { useCart } from '../context/CartContext';
 
 /* ─── Product Card with quick-add ─────────────────────────── */
 const ProductCard = ({ product }) => {
-  const { addToCart, isInCart } = useCart();
-  const [justAdded, setJustAdded] = useState(false);
-
-  const handleQuickAdd = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addToCart(product, 1);
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 1800);
-  };
-
-  const inCart = isInCart(product._id);
-
   return (
     <div className="product-card shop-card">
       <Link to={`/product/${product._id}`} className="shop-card__img-wrap">
@@ -32,31 +17,24 @@ const ProductCard = ({ product }) => {
             backgroundPosition: 'center',
           }}
         >
+          {product.hasBadge && product.badgeText && (
+            <div
+              className="absolute top-3 left-3 px-3 py-1 text-xs font-semibold uppercase rounded"
+              style={{
+                backgroundColor: product.badgeBgColor,
+                color: product.badgeTextColor,
+              }}
+            >
+              {product.badgeText}
+            </div>
+          )}
+
           {product.luxuryLabel && (
             <div className="absolute top-3 right-3 bg-amber-500 text-white px-3 py-1 text-xs font-semibold uppercase rounded">
               {product.luxuryLabel}
             </div>
           )}
-          {inCart && !justAdded && (
-            <div className="shop-card__in-cart-badge">In bag</div>
-          )}
         </div>
-
-        {/* Quick-add overlay */}
-        <button
-          className={`shop-card__quick-add ${justAdded ? 'shop-card__quick-add--done' : ''}`}
-          onClick={handleQuickAdd}
-          disabled={product.stock <= 0 || justAdded}
-          aria-label={`Add ${product.name} to bag`}
-        >
-          {justAdded ? (
-            <><Check size={16} /> Added</>
-          ) : product.stock <= 0 ? (
-            'Out of Stock'
-          ) : (
-            <><ShoppingBag size={16} /> Quick Add</>
-          )}
-        </button>
       </Link>
 
       <div className="product-info">
@@ -73,72 +51,95 @@ const ProductCard = ({ product }) => {
 };
 
 const Shop = () => {
-  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const productsPerPage = 12;
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get(`/products?page=${page}&limit=20`);
-        setProducts(data.products);
-        setTotalPages(data.pages);
+        // Fetch all products (using a high limit to get everything)
+        const { data } = await api.get('/products?limit=1000');
+        setAllProducts(data.products);
       } catch (error) {
         console.error('Error fetching products', error);
-        setProducts([]);
+        setAllProducts([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [page]);
+  }, []);
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(allProducts.length / productsPerPage);
+  const indexOfLastProduct = page * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = allProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="container">
       <h1 className="page-title">Collection</h1>
       {loading ? (
-        <p className="text-center py-8">Loading...</p>
+        <p className="text-center py-20">Loading Collection...</p>
       ) : (
         <>
           <div className="product-grid">
-            {products.map((product) => (
+            {currentProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
           </div>
 
+          {allProducts.length === 0 && (
+            <p className="text-center py-20 text-gray-dark">No products found in the collection.</p>
+          )}
+
+          <br />
+          <br />
+
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex justify-center gap-2 mt-8 pb-8">
-              {page > 1 && (
-                <button
-                  onClick={() => setPage(page - 1)}
-                  className="btn"
-                >
-                  Previous
-                </button>
-              )}
-              <div className="flex items-center gap-2">
+            <div className="flex justify-center items-center gap-4 mt-12 pb-12">
+              <button
+                onClick={() => handlePageChange(page - 1)}
+                disabled={page === 1}
+                className={`px-4 py-2 border border-black text-xs uppercase tracking-widest transition-all ${page === 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-black hover:text-white'
+                  }`}
+              >
+                {'<'}
+              </button>
+
+              <div className="flex gap-2">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                   <button
                     key={p}
-                    onClick={() => setPage(p)}
-                    className={`px-3 py-2 ${page === p ? 'btn' : 'btn-outline'}`}
+                    onClick={() => handlePageChange(p)}
+                    className={`w-8 h-8 flex items-center justify-center text-xs transition-all ${page === p
+                      ? 'bg-black text-white font-bold'
+                      : 'hover:bg-gray-light border border-transparent hover:border-gray-dark'
+                      }`}
                   >
                     {p}
                   </button>
                 ))}
               </div>
-              {page < totalPages && (
-                <button
-                  onClick={() => setPage(page + 1)}
-                  className="btn"
-                >
-                  Next
-                </button>
-              )}
+
+              <button
+                onClick={() => handlePageChange(page + 1)}
+                disabled={page === totalPages}
+                className={`px-4 py-2 border border-black text-xs uppercase tracking-widest transition-all ${page === totalPages ? 'opacity-30 cursor-not-allowed' : 'hover:bg-black hover:text-white'
+                  }`}
+              >
+                {'>'}
+              </button>
             </div>
           )}
         </>

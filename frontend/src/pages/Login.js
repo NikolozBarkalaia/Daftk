@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -8,11 +9,13 @@ const Login = () => {
   const navigate = useNavigate();
 
   const { login } = useContext(AuthContext);
+  const { showError, showSuccess } = useNotification();
 
   const submitHandler = async (e) => {
     e.preventDefault();
     try {
       const user = await login(email, password);
+      showSuccess('Welcome back!');
       if (user.isAdmin) {
         navigate('/admin');
       } else {
@@ -20,7 +23,7 @@ const Login = () => {
       }
     } catch (error) {
       console.error(error);
-      alert(error || 'Invalid credentials');
+      showError(error || 'Invalid credentials');
     }
   };
 

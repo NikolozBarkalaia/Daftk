@@ -19,6 +19,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please add all fields' });
     }
 
+    // User.findOne is synchronous (node:sqlite DatabaseSync)
     const userExists = User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -26,17 +27,13 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({ name, email, password });
 
-    if (user) {
-      res.status(201).json({
-        _id: user.id,
-        name: user.name,
-        email: user.email,
-        isAdmin: user.isAdmin,
-        token: generateToken(user.id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
+    res.status(201).json({
+      _id: user.id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.isAdmin,
+      token: generateToken(user.id),
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -49,6 +46,11 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
+    }
+
+    // User.findOne is synchronous (node:sqlite DatabaseSync)
     const user = User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {

@@ -71,17 +71,17 @@ export const CartProvider = ({ children }) => {
   }, [removeToast]);
 
   /* ── Cart operations ── */
-  const addToCart = useCallback((product, qty = 1) => {
+  const addToCart = useCallback((product, qty = 1, selectedSize = null) => {
     setCartItems((prev) => {
-      const existing = prev.find((item) => item._id === product._id);
+      const existing = prev.find((item) => item._id === product._id && item.selectedSize === selectedSize);
       if (existing) {
         const newQty = existing.quantity + qty;
-        showToast(`${product.name} — quantity updated to ${newQty}`);
+        showToast(`${product.name}${selectedSize ? ` (${selectedSize})` : ''} — quantity updated to ${newQty}`);
         return prev.map((item) =>
-          item._id === product._id ? { ...item, quantity: newQty } : item
+          (item._id === product._id && item.selectedSize === selectedSize) ? { ...item, quantity: newQty } : item
         );
       }
-      showToast(`${product.name} added to bag`, 'success');
+      showToast(`${product.name}${selectedSize ? ` (${selectedSize})` : ''} added to bag`, 'success');
       return [
         ...prev,
         {
@@ -91,31 +91,37 @@ export const CartProvider = ({ children }) => {
           oldPrice: product.oldPrice || null,
           image:    product.imageUrls?.[0] || product.image || '',
           stock:    product.stock ?? 99,
+          sizeStock: product.sizeStock || {},
+          selectedSize: selectedSize,
           quantity: qty,
         },
       ];
     });
   }, [showToast]);
 
-  const removeFromCart = useCallback((id) => {
+  const removeFromCart = useCallback((id, selectedSize = null) => {
     setCartItems((prev) => {
-      const item = prev.find((i) => i._id === id);
-      if (item) showToast(`${item.name} removed from bag`, 'info');
-      return prev.filter((i) => i._id !== id);
+      const item = prev.find((i) => i._id === id && i.selectedSize === selectedSize);
+      if (item) showToast(`${item.name}${selectedSize ? ` (${selectedSize})` : ''} removed from bag`, 'info');
+      return prev.filter((i) => !(i._id === id && i.selectedSize === selectedSize));
     });
   }, [showToast]);
 
-  const updateQuantity = useCallback((id, qty) => {
+  const updateQuantity = useCallback((id, qty, selectedSize = null) => {
     if (qty <= 0) {
-      removeFromCart(id);
+      removeFromCart(id, selectedSize);
       return;
     }
     setCartItems((prev) =>
-      prev.map((item) =>
-        item._id === id
-          ? { ...item, quantity: Math.min(qty, item.stock ?? 99) }
-          : item
-      )
+      prev.map((item) => {
+        if (item._id === id && item.selectedSize === selectedSize) {
+          const maxStock = selectedSize && item.sizeStock?.[selectedSize] !== undefined 
+            ? item.sizeStock[selectedSize] 
+            : (item.stock ?? 99);
+          return { ...item, quantity: Math.min(qty, maxStock) };
+        }
+        return item;
+      })
     );
   }, [removeFromCart]);
 
@@ -125,7 +131,7 @@ export const CartProvider = ({ children }) => {
   }, [showToast]);
 
   const isInCart = useCallback(
-    (id) => cartItems.some((item) => item._id === id),
+    (id, selectedSize = null) => cartItems.some((item) => item._id === id && item.selectedSize === selectedSize),
     [cartItems]
   );
 

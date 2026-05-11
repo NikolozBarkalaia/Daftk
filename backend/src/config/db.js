@@ -35,10 +35,38 @@ db.exec(`
     stock INTEGER NOT NULL DEFAULT 0,
     isFeatured INTEGER NOT NULL DEFAULT 0,
     luxuryLabel TEXT,
+    hasBadge INTEGER NOT NULL DEFAULT 0,
+    badgeText TEXT,
+    badgeBgColor TEXT DEFAULT '#000000',
+    badgeTextColor TEXT DEFAULT '#ffffff',
     createdAt TEXT NOT NULL DEFAULT (datetime('now')),
-    updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+    updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+    sizeStock TEXT DEFAULT '{}'
   );
+`);
 
+// Migration: Add badge columns if they don't exist
+try {
+  db.prepare("SELECT hasBadge FROM products LIMIT 1").get();
+} catch (err) {
+  db.exec(`
+    ALTER TABLE products ADD COLUMN hasBadge INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE products ADD COLUMN badgeText TEXT;
+    ALTER TABLE products ADD COLUMN badgeBgColor TEXT DEFAULT '#000000';
+    ALTER TABLE products ADD COLUMN badgeTextColor TEXT DEFAULT '#ffffff';
+  `);
+}
+
+// Migration: Add sizeStock column if it doesn't exist
+try {
+  db.prepare("SELECT sizeStock FROM products LIMIT 1").get();
+} catch (err) {
+  db.exec(`
+    ALTER TABLE products ADD COLUMN sizeStock TEXT DEFAULT '{}';
+  `);
+}
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -99,6 +127,14 @@ db.exec(`
     createdAt TEXT NOT NULL DEFAULT (datetime('now')),
     updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (userId) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS contact_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    message TEXT NOT NULL,
+    createdAt TEXT NOT NULL DEFAULT (datetime('now'))
   );
 `);
 

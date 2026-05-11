@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const Product = require('./Product');
 
 function format(row) {
   if (!row) return null;
@@ -30,6 +31,14 @@ const Order = {
       total,
       notes || null
     );
+
+    // Decrease stock for each item
+    items.forEach(item => {
+      if (item._id && item.selectedSize) {
+        Product.decreaseStock(item._id, item.selectedSize, item.quantity || 1);
+      }
+    });
+
     return format(db.prepare('SELECT * FROM orders WHERE id = ?').get(info.lastInsertRowid));
   },
 

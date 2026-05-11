@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { NotificationProvider } from './context/NotificationContext';
 import App from './App';
 
 // Self-hosted fonts via @fontsource (no CDN dependency)
@@ -27,7 +28,9 @@ root.render(
     <AuthProvider>
       <BrowserRouter>
         <CartProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </CartProvider>
       </BrowserRouter>
     </AuthProvider>

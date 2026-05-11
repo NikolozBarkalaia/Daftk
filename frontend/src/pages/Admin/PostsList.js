@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../services/api';
 import { Edit, Trash2, Plus } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
 
 const PostsList = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showSuccess, showError, confirm } = useNotification();
 
   const fetchPosts = async () => {
     try {
@@ -23,12 +25,21 @@ const PostsList = () => {
   }, []);
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Post',
+      message: 'Are you sure you want to delete this post? This action cannot be undone.',
+      confirmText: 'Delete',
+      danger: true
+    });
+
+    if (isConfirmed) {
       try {
         await api.delete(`/posts/${id}`);
         setPosts(posts.filter(p => p._id !== id));
+        showSuccess('Post deleted successfully');
       } catch (error) {
         console.error('Error deleting post:', error);
+        showError('Failed to delete post');
       }
     }
   };

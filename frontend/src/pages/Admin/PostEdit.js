@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../../services/api';
+import { useNotification } from '../../context/NotificationContext';
 
 const PostEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showSuccess, showError } = useNotification();
   const isNew = id === 'new';
 
   const [title, setTitle] = useState('');
@@ -50,10 +52,11 @@ const PostEdit = () => {
       } else {
         await api.put(`/posts/${id}`, postData);
       }
+      showSuccess('Post saved successfully');
       navigate('/admin/posts');
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('Error saving post');
+      showError('Error saving post');
     } finally {
       setSaving(false);
     }

@@ -12,6 +12,7 @@ import AdminHeroManager from './pages/Admin/HeroManager';
 import AdminSliderManager from './pages/Admin/SliderManager';
 import AdminProductsManager from './pages/Admin/ProductsManager';
 import AdminOrdersManager from './pages/Admin/OrdersManager';
+import AdminContactMessages from './pages/Admin/ContactMessages';
 
 // Client Components & Pages (Placeholders since they were requested)
 import Layout from './components/Layout';
@@ -41,6 +42,7 @@ function App() {
           <Route path="slider" element={<AdminSliderManager />} />
           <Route path="products" element={<AdminProductsManager />} />
           <Route path="orders" element={<AdminOrdersManager />} />
+          <Route path="messages" element={<AdminContactMessages />} />
         </Route>
       </Route>
 
@@ -55,7 +57,7 @@ function App() {
         <Route path="/orders" element={<MyOrders />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
       </Route>
 

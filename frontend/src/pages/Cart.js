@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { getMediaUrl } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 
 /* ─── Empty State ─────────────────────────────────────────── */
 const EmptyCart = () => (
@@ -45,6 +46,11 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
 
       <div className="cart-item__info">
         <Link to={`/product/${item._id}`} className="cart-item__name">{item.name}</Link>
+        {item.selectedSize && (
+          <div className="text-xs text-gray-dark mt-1 font-medium uppercase">
+            Size: <span className="text-black">{item.selectedSize}</span>
+          </div>
+        )}
         <div className="cart-item__prices">
           <span className="cart-item__price">€{item.price}</span>
           {hasDiscount && (
@@ -56,7 +62,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
       <div className="cart-item__qty">
         <button
           className="cart-item__qty-btn"
-          onClick={() => onUpdate(item._id, item.quantity - 1)}
+          onClick={() => onUpdate(item._id, item.quantity - 1, item.selectedSize)}
           aria-label="Decrease quantity"
         >
           <Minus size={13} />
@@ -64,8 +70,8 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
         <span className="cart-item__qty-val">{item.quantity}</span>
         <button
           className="cart-item__qty-btn"
-          onClick={() => onUpdate(item._id, item.quantity + 1)}
-          disabled={item.quantity >= (item.stock ?? 99)}
+          onClick={() => onUpdate(item._id, item.quantity + 1, item.selectedSize)}
+          disabled={item.quantity >= (item.sizeStock?.[item.selectedSize] ?? item.stock ?? 99)}
           aria-label="Increase quantity"
         >
           <Plus size={13} />
@@ -76,7 +82,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
 
       <button
         className="cart-item__remove"
-        onClick={() => onRemove(item._id)}
+        onClick={() => onRemove(item._id, item.selectedSize)}
         aria-label={`Remove ${item.name}`}
       >
         <Trash2 size={15} />
@@ -128,9 +134,16 @@ const OrderSummary = ({ subtotal, itemCount, onClear }) => {
 /* ─── Main Cart Page ──────────────────────────────────────── */
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartCount, cartSubtotal } = useCart();
+  const { confirm } = useNotification();
 
-  const handleClear = () => {
-    if (window.confirm('Remove all items from your bag?')) clearCart();
+  const handleClear = async () => {
+    const isConfirmed = await confirm({
+      title: 'Clear Bag',
+      message: 'Remove all items from your bag?',
+      confirmText: 'Remove All',
+      danger: true
+    });
+    if (isConfirmed) clearCart();
   };
 
   if (cartItems.length === 0) {
@@ -155,14 +168,14 @@ const Cart = () => {
           </div>
 
           <div className="cart-items__list">
-            {cartItems.map((item) => (
-              <CartItem
-                key={item._id}
-                item={item}
-                onUpdate={updateQuantity}
-                onRemove={removeFromCart}
-              />
-            ))}
+             {cartItems.map((item) => (
+               <CartItem
+                 key={`${item._id}-${item.selectedSize || 'no-size'}`}
+                 item={item}
+                 onUpdate={updateQuantity}
+                 onRemove={removeFromCart}
+               />
+             ))}
           </div>
         </section>
 

@@ -12,7 +12,7 @@ const Navbar = () => {
   const [miniOpen, setMiniOpen] = useState(false);
   const hoverTimer = useRef(null);
 
-  const openMini  = useCallback(() => {
+  const openMini = useCallback(() => {
     clearTimeout(hoverTimer.current);
     setMiniOpen(true);
   }, []);
@@ -21,7 +21,7 @@ const Navbar = () => {
     hoverTimer.current = setTimeout(() => setMiniOpen(false), 120);
   }, []);
 
-  const keepOpen  = useCallback(() => {
+  const keepOpen = useCallback(() => {
     clearTimeout(hoverTimer.current);
   }, []);
 
@@ -37,7 +37,6 @@ const Navbar = () => {
           <Link to="/contact">Contact</Link>
         </div>
         <div className="nav-icons">
-          <Link to="/login"><User size={20} strokeWidth={1.5} /></Link>
           {user && (
             <Link to="/orders" className="nav-orders-link" title="My Orders">
               Orders

@@ -10,6 +10,11 @@ function format(row) {
     imageUrls: JSON.parse(row.imageUrls || '[]'),
     tags: JSON.parse(row.tags || '[]'),
     isFeatured: row.isFeatured === 1,
+    hasBadge: row.hasBadge === 1,
+    badgeText: row.badgeText || null,
+    badgeBgColor: row.badgeBgColor || '#000000',
+    badgeTextColor: row.badgeTextColor || '#ffffff',
+    sizeStock: JSON.parse(row.sizeStock || '{}'),
   };
 }
 
@@ -42,12 +47,12 @@ const Product = {
     return format(db.prepare('SELECT * FROM products WHERE id = ?').get(id));
   },
 
-  create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [] }) {
+  create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [], hasBadge = false, badgeText = null, badgeBgColor = '#000000', badgeTextColor = '#ffffff', sizeStock = {} }) {
     const ts = now();
     const info = db.prepare(
-      `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, ts, ts);
+      `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, hasBadge, badgeText, badgeBgColor, badgeTextColor, createdAt, updatedAt, sizeStock)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, hasBadge ? 1 : 0, badgeText, badgeBgColor, badgeTextColor, ts, ts, JSON.stringify(sizeStock));
     return this.findById(info.lastInsertRowid);
   },
 
@@ -55,7 +60,7 @@ const Product = {
     const p = this.findById(id);
     if (!p) return null;
     db.prepare(
-      `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, updatedAt=? WHERE id=?`
+      `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, hasBadge=?, badgeText=?, badgeBgColor=?, badgeTextColor=?, sizeStock=?, updatedAt=? WHERE id=?`
     ).run(
       fields.name !== undefined ? fields.name : p.name,
       fields.description !== undefined ? fields.description : p.description,
@@ -67,9 +72,29 @@ const Product = {
       fields.stock !== undefined ? fields.stock : p.stock,
       (fields.isFeatured !== undefined ? fields.isFeatured : p.isFeatured) ? 1 : 0,
       fields.luxuryLabel !== undefined ? fields.luxuryLabel : p.luxuryLabel,
+      (fields.hasBadge !== undefined ? fields.hasBadge : p.hasBadge) ? 1 : 0,
+      fields.badgeText !== undefined ? fields.badgeText : p.badgeText,
+      fields.badgeBgColor !== undefined ? fields.badgeBgColor : p.badgeBgColor,
+      fields.badgeTextColor !== undefined ? fields.badgeTextColor : p.badgeTextColor,
+      JSON.stringify(fields.sizeStock !== undefined ? fields.sizeStock : p.sizeStock),
       now(), id
     );
     return this.findById(id);
+  },
+
+  decreaseStock(id, size, quantity) {
+    const product = this.findById(id);
+    if (!product) return null;
+
+    const sizeStock = { ...product.sizeStock };
+    if (sizeStock[size] !== undefined) {
+      sizeStock[size] = Math.max(0, sizeStock[size] - quantity);
+    }
+
+    // Also update total stock
+    const newTotalStock = Object.values(sizeStock).reduce((sum, s) => sum + s, 0);
+
+    return this.update(id, { sizeStock, stock: newTotalStock });
   },
 
   delete(id) {

@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { Plus, Trash2, GripVertical, Edit2 } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Edit2, Upload } from 'lucide-react';
+import { useNotification } from '../../context/NotificationContext';
+import FileUploader from '../../components/Admin/FileUploader';
 
 const SliderManager = () => {
   const [sliderItems, setSliderItems] = useState([]);
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const { showSuccess, showError, confirm } = useNotification();
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
@@ -35,7 +39,7 @@ const SliderManager = () => {
       setMedia(mediaRes.data.media || []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setMessage('Error loading slider data');
+      showError('Error loading slider data');
     } finally {
       setLoading(false);
     }
@@ -53,6 +57,7 @@ const SliderManager = () => {
     });
     setEditingId(null);
     setShowForm(false);
+    setShowUploader(false);
   };
 
   const handleInputChange = (e) => {
@@ -63,11 +68,50 @@ const SliderManager = () => {
     }));
   };
 
+  const handleUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    
+    const formDataObj = new FormData();
+    formDataObj.append('file', file);
+
+    try {
+      const { data } = await api.post('/media/upload', formDataObj, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // Refresh media list
+      const mediaRes = await api.get('/media');
+      const newMedia = mediaRes.data.media || [];
+      setMedia(newMedia);
+
+      // Extract uploaded file info (backend returns it directly)
+      const uploadedFile = data;
+      
+      if (uploadedFile) {
+        setFormData(prev => ({ 
+          ...prev, 
+          mediaId: uploadedFile._id || uploadedFile.id,
+          mediaType: uploadedFile.type === 'video' ? 'video' : 'image'
+        }));
+        showSuccess('File uploaded and selected');
+        setShowUploader(false);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      showError('Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (!formData.title || !formData.mediaId) {
-        setMessage('Please fill in all required fields');
+        showError('Please fill in all required fields');
         return;
       }
 
@@ -75,19 +119,18 @@ const SliderManager = () => {
         // Update
         const response = await api.put(`/slider/${editingId}`, formData);
         setSliderItems(sliderItems.map(item => item._id === editingId ? response.data : item));
-        setMessage('Slider item updated successfully!');
+        showSuccess('Slider item updated successfully!');
       } else {
         // Create
         const response = await api.post('/slider', formData);
         setSliderItems([...sliderItems, response.data]);
-        setMessage('Slider item created successfully!');
+        showSuccess('Slider item created successfully!');
       }
 
       resetForm();
-      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       console.error('Error saving slider item:', error);
-      setMessage(error.response?.data?.message || 'Error saving slider item');
+      showError(error.response?.data?.message || 'Error saving slider item');
     }
   };
 
@@ -106,15 +149,21 @@ const SliderManager = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this slider item?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Slider Item',
+      message: 'Are you sure you want to delete this slider item?',
+      confirmText: 'Delete',
+      danger: true
+    });
+
+    if (isConfirmed) {
       try {
         await api.delete(`/slider/${id}`);
         setSliderItems(sliderItems.filter(item => item._id !== id));
-        setMessage('Slider item deleted successfully!');
-        setTimeout(() => setMessage(''), 3000);
+        showSuccess('Slider item deleted successfully!');
       } catch (error) {
         console.error('Error deleting slider item:', error);
-        setMessage('Error deleting slider item');
+        showError('Error deleting slider item');
       }
     }
   };
@@ -137,11 +186,6 @@ const SliderManager = () => {
         )}
       </div>
 
-      {message && (
-        <div className={`p-4 rounded mb-6 ${message.includes('successfully') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {message}
-        </div>
-      )}
 
       {/* Form */}
       {showForm && (
@@ -219,26 +263,48 @@ const SliderManager = () => {
               </select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-2">Select {formData.mediaType === 'video' ? 'Video' : 'Image'} *</label>
-              <select
-                name="mediaId"
-                value={formData.mediaId}
-                onChange={handleInputChange}
-                className="input-field"
-                required
-              >
-                <option value="">-- Choose a {formData.mediaType} --</option>
-                {filteredMedia.map(m => (
-                  <option key={m._id} value={m._id}>
-                    {m.filename}
-                  </option>
-                ))}
-              </select>
-              {filteredMedia.length === 0 && (
-                <p className="text-sm text-gray-dark mt-2">
-                  No {formData.mediaType}s available. Upload one in Media section first.
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium">
+                  Media Asset *
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => setShowUploader(!showUploader)}
+                  className="text-xs font-semibold uppercase tracking-wider text-gray-dark hover:text-black flex items-center gap-1 transition-colors"
+                >
+                  <Upload size={14} />
+                  {showUploader ? 'Select from Gallery' : 'Upload New'}
+                </button>
+              </div>
+
+              {showUploader ? (
+                <div className="bg-gray-light p-4 rounded-lg border border-border">
+                  <FileUploader onFileSelect={handleUpload} />
+                  {uploading && <p className="text-sm mt-2 text-gray-dark animate-pulse">Uploading and processing...</p>}
+                </div>
+              ) : (
+                <div>
+                  <select
+                    name="mediaId"
+                    value={formData.mediaId}
+                    onChange={handleInputChange}
+                    className="input-field"
+                    required
+                  >
+                    <option value="">-- Choose a {formData.mediaType} --</option>
+                    {filteredMedia.map(m => (
+                      <option key={m._id} value={m._id}>
+                        {m.filename}
+                      </option>
+                    ))}
+                  </select>
+                  {filteredMedia.length === 0 && (
+                    <p className="text-sm text-gray-dark mt-2">
+                      No {formData.mediaType}s available. Click "Upload New" above.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 

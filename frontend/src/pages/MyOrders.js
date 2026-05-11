@@ -21,7 +21,7 @@ const MyOrders = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login', { state: { from: '/orders' } });
+      navigate('/admin/login', { state: { from: '/orders' } });
       return;
     }
     getMyOrders()
