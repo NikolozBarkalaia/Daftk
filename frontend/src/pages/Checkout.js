@@ -33,18 +33,18 @@ const Checkout = () => {
 
   const [form, setForm] = useState({
     firstName: user?.name?.split(' ')[0] || '',
-    lastName:  user?.name?.split(' ').slice(1).join(' ') || '',
-    email:     user?.email || '',
-    address:   '',
-    city:      '',
-    country:   '',
-    postalCode:'',
-    phone:     '',
-    notes:     '',
+    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
+    email: user?.email || '',
+    address: '',
+    city: '',
+    country: '',
+    postalCode: '',
+    phone: '',
+    notes: '',
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState('');
+  const [error, setError] = useState('');
 
   if (!user) {
     return (
@@ -87,22 +87,22 @@ const Checkout = () => {
     setSubmitting(true);
 
     const shippingAddress = {
-      name:       `${form.firstName} ${form.lastName}`.trim(),
-      email:      form.email,
-      phone:      form.phone,
-      address:    form.address,
-      city:       form.city,
-      country:    form.country,
+      name: `${form.firstName} ${form.lastName}`.trim(),
+      email: form.email,
+      phone: form.phone,
+      address: form.address,
+      city: form.city,
+      country: form.country,
       postalCode: form.postalCode,
     };
 
     const items = cartItems.map((item) => ({
-      _id:       item._id, // Adding this to match Order model expectation
+      _id: item._id, // Adding this to match Order model expectation
       productId: item._id,
-      name:      item.name,
-      price:     item.price,
-      quantity:  item.quantity,
-      image:     item.image,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image,
       selectedSize: item.selectedSize,
     }));
 
@@ -111,8 +111,8 @@ const Checkout = () => {
         items,
         shippingAddress,
         subtotal: cartSubtotal,
-        total:    cartSubtotal,
-        notes:    form.notes,
+        total: cartSubtotal,
+        notes: form.notes,
       });
       clearCart();
       navigate(`/order-confirmation/${data.id}`, { state: { order: data } });
@@ -137,13 +137,13 @@ const Checkout = () => {
 
             <div className="checkout-row">
               <Field label="First Name" name="firstName" value={form.firstName} onChange={handleChange} required placeholder="Jean" />
-              <Field label="Last Name"  name="lastName"  value={form.lastName}  onChange={handleChange} required placeholder="Dupont" />
+              <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} required placeholder="Dupont" />
             </div>
             <Field label="Email" name="email" type="email" value={form.email} onChange={handleChange} required placeholder="you@example.com" />
             <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+33 6 00 00 00 00" />
             <Field label="Street Address" name="address" value={form.address} onChange={handleChange} required placeholder="12 Rue de la Paix" />
             <div className="checkout-row">
-              <Field label="City"        name="city"       value={form.city}       onChange={handleChange} required placeholder="Paris" />
+              <Field label="City" name="city" value={form.city} onChange={handleChange} required placeholder="Paris" />
               <Field label="Postal Code" name="postalCode" value={form.postalCode} onChange={handleChange} required placeholder="75001" />
             </div>
             <Field label="Country" name="country" value={form.country} onChange={handleChange} required placeholder="France" />

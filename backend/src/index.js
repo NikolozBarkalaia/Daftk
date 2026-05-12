@@ -28,6 +28,10 @@ app.use('/api/slider', require('./routes/sliderRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 
+// ტესტირება
+// app.use('/api', require('./routes/testRoutes'));
+app.use('/api', require('./routes/verifyRoutes'));
+
 // Basic route
 app.get('/', (req, res) => {
   res.send('API is running...');

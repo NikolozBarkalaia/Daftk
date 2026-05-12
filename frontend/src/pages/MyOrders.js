@@ -5,19 +5,19 @@ import { AuthContext } from '../context/AuthContext';
 import { getMyOrders } from '../services/api';
 
 const STATUS_LABEL = {
-  pending:    'Received',
+  pending: 'Received',
   processing: 'Processing',
-  shipped:    'Shipped',
-  delivered:  'Delivered',
-  cancelled:  'Cancelled',
+  shipped: 'Shipped',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
 };
 
 const MyOrders = () => {
   const { user } = useContext(AuthContext);
-  const navigate  = useNavigate();
-  const [orders, setOrders]   = useState([]);
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!user) {

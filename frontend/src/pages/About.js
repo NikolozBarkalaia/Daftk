@@ -1,21 +1,21 @@
 import React from 'react';
+import DaftKImage from '../../../frontend/src/assets/aboutUsPageEng0.jpeg';
 
 const About = () => {
   return (
-    <div className="container" style={{ maxWidth: '800px' }}>
-      <h1 className="page-title">About DaftK</h1>
-      <div style={{ lineHeight: '1.8', color: 'var(--color-gray-dark)', fontSize: '1.1rem' }}>
-        <p style={{ marginBottom: '20px' }}>
-          Founded on the principles of minimalism and uncompromising quality, DaftK redefines modern luxury essentials.
-        </p>
-        <p style={{ marginBottom: '20px' }}>
-          We believe that true elegance lies in simplicity. Our collections are meticulously crafted from the finest materials, designed not just for a season, but for a lifetime. Each piece is an exploration of form and function, stripped of excess to reveal its pure essence.
-        </p>
-        <p>
-          Embrace the power of understated design. Welcome to DaftK.
-        </p>
+    <section className="w-full bg-white text-black px-4 md:px-10 lg:px-20 py-16">
+
+      {/* Image Section */}
+      <div className="max-w-5xl mx-auto">
+        <div className="overflow-hidden rounded-lg shadow-lg">
+          <img
+            src={DaftKImage}
+            alt="DaftK"
+            className="w-full h-auto object-cover"
+          />
+        </div>
       </div>
-    </div>
+    </section>
   );
 };
 
