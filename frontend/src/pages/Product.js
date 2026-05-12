@@ -67,10 +67,17 @@ const Product = () => {
 
   const handleSizeChange = (size) => {
     setSelectedSize(size);
-    setQuantity(1); // Reset quantity when size changes
+    const sizeStock = product?.sizeStock?.[size] || 0;
+    // Cap quantity to available stock for the selected size
+    if (quantity > sizeStock) {
+      setQuantity(Math.max(1, sizeStock));
+    }
   };
 
   const addToCartHandler = () => {
+    // Validate stock before adding
+    const canAdd = !cartItem || (cartItem.quantity + quantity <= currentSizeStock);
+    if (!canAdd) return; // Stock limit reached, don't add
     addToCart(product, quantity, selectedSize);
     showSuccess(`${product.name} (${selectedSize}) added to bag`);
     setAdded(true);
@@ -238,13 +245,13 @@ const Product = () => {
                 <Minus size={18} />
               </button>
               <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                type="number"
+                min="1"
+                max={currentSizeStock}
                 value={quantity}
                 onChange={(e) => {
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val) && val > 0) handleQuantityChange(val);
+                  const val = parseInt(e.target.value) || 1;
+                  handleQuantityChange(val);
                 }}
                 className="w-12 text-center border-none outline-none"
               />
@@ -278,7 +285,7 @@ const Product = () => {
                   <button
                     className="pdp-in-cart__qty-btn"
                     onClick={() => updateQuantity(cartItem._id, cartItem.quantity + 1, selectedSize)}
-                    disabled={cartItem.quantity >= (currentSizeStock ?? 99)}
+                    disabled={cartItem.quantity >= currentSizeStock}
                     aria-label="Increase cart quantity"
                   >
                     <Plus size={12} />
@@ -298,11 +305,11 @@ const Product = () => {
           {/* Add to Cart Button */}
           <button
             onClick={addToCartHandler}
-            disabled={currentSizeStock <= 0}
+            disabled={currentSizeStock <= 0 || (cartItem && cartItem.quantity + quantity > currentSizeStock)}
             className={`btn w-full !flex items-center justify-center gap-2 mb-3 whitespace-nowrap transition-all ${added ? 'bg-green-700 border-green-700' : ''}`}
           >
             {added ? <Check size={18} /> : <ShoppingCart size={18} />}
-            {currentSizeStock <= 0 ? 'Size Out of Stock' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
+            {currentSizeStock <= 0 ? 'Size Out of Stock' : (cartItem && cartItem.quantity + quantity > currentSizeStock) ? 'Exceeds Stock Limit' : added ? 'Added to Bag!' : cartItem ? 'Add More to Bag' : 'Add to Bag'}
           </button>
 
           <Link to="/shop" className="btn btn-outline w-full !flex items-center justify-center gap-2 whitespace-nowrap">

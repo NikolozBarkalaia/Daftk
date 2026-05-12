@@ -16,9 +16,6 @@ const SliderManager = () => {
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
-    description: '',
-    buttonText: 'Discover',
-    buttonLink: '',
     mediaType: 'image',
     mediaId: ''
   });
@@ -49,9 +46,6 @@ const SliderManager = () => {
     setFormData({
       title: '',
       subtitle: '',
-      description: '',
-      buttonText: 'Discover',
-      buttonLink: '',
       mediaType: 'image',
       mediaId: ''
     });
@@ -138,9 +132,6 @@ const SliderManager = () => {
     setFormData({
       title: item.title,
       subtitle: item.subtitle || '',
-      description: item.description || '',
-      buttonText: item.buttonText,
-      buttonLink: item.buttonLink || '',
       mediaType: item.mediaType,
       mediaId: item.mediaId._id
     });
@@ -213,41 +204,6 @@ const SliderManager = () => {
                 onChange={handleInputChange}
                 className="input-field"
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="input-field"
-                rows="3"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Button Text</label>
-                <input
-                  type="text"
-                  name="buttonText"
-                  value={formData.buttonText}
-                  onChange={handleInputChange}
-                  className="input-field"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Button Link</label>
-                <input
-                  type="text"
-                  name="buttonLink"
-                  value={formData.buttonLink}
-                  onChange={handleInputChange}
-                  className="input-field"
-                />
-              </div>
             </div>
 
             <div>

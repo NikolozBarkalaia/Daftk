@@ -5,8 +5,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminRoute from './components/Admin/AdminRoute';
 import AdminLayout from './components/Admin/Layout';
 import AdminDashboard from './pages/Admin/Dashboard';
-import AdminPostsList from './pages/Admin/PostsList';
-import AdminPostEdit from './pages/Admin/PostEdit';
 import AdminMediaGallery from './pages/Admin/MediaGallery';
 import AdminHeroManager from './pages/Admin/HeroManager';
 import AdminSliderManager from './pages/Admin/SliderManager';
@@ -35,8 +33,6 @@ function App() {
       <Route path="/admin" element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="posts" element={<AdminPostsList />} />
-          <Route path="posts/:id" element={<AdminPostEdit />} />
           <Route path="media" element={<AdminMediaGallery />} />
           <Route path="hero" element={<AdminHeroManager />} />
           <Route path="slider" element={<AdminSliderManager />} />

@@ -75,7 +75,10 @@ export const CartProvider = ({ children }) => {
     setCartItems((prev) => {
       const existing = prev.find((item) => item._id === product._id && item.selectedSize === selectedSize);
       if (existing) {
-        const newQty = existing.quantity + qty;
+        const maxStock = selectedSize && product.sizeStock?.[selectedSize] !== undefined
+          ? product.sizeStock[selectedSize]
+          : (product.stock ?? 99);
+        const newQty = Math.min(existing.quantity + qty, maxStock);
         showToast(`${product.name}${selectedSize ? ` (${selectedSize})` : ''} — quantity updated to ${newQty}`);
         return prev.map((item) =>
           (item._id === product._id && item.selectedSize === selectedSize) ? { ...item, quantity: newQty } : item

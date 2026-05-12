@@ -30,12 +30,12 @@ const SliderItem = {
     return row.maxOrder !== null ? row.maxOrder : -1;
   },
 
-  create({ title, subtitle, description, buttonText = 'Discover', buttonLink, mediaType, mediaId, order, isActive = true }) {
+  create({ title, subtitle, mediaType, mediaId, order, isActive = true }) {
     const ts = now();
     const info = db.prepare(
-      `INSERT INTO slider_items (title, subtitle, description, buttonText, buttonLink, mediaType, mediaId, displayOrder, isActive, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(title, subtitle, description, buttonText, buttonLink, mediaType, mediaId, order, isActive ? 1 : 0, ts, ts);
+      `INSERT INTO slider_items (title, subtitle, mediaType, mediaId, displayOrder, isActive, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(title, subtitle, mediaType, mediaId, order, isActive ? 1 : 0, ts, ts);
     return this.findById(info.lastInsertRowid);
   },
 
@@ -43,13 +43,10 @@ const SliderItem = {
     const item = db.prepare('SELECT * FROM slider_items WHERE id = ?').get(id);
     if (!item) return null;
     db.prepare(
-      `UPDATE slider_items SET title=?, subtitle=?, description=?, buttonText=?, buttonLink=?, mediaType=?, mediaId=?, displayOrder=?, updatedAt=? WHERE id=?`
+      `UPDATE slider_items SET title=?, subtitle=?, mediaType=?, mediaId=?, displayOrder=?, updatedAt=? WHERE id=?`
     ).run(
       fields.title !== undefined ? fields.title : item.title,
       fields.subtitle !== undefined ? fields.subtitle : item.subtitle,
-      fields.description !== undefined ? fields.description : item.description,
-      fields.buttonText !== undefined ? fields.buttonText : item.buttonText,
-      fields.buttonLink !== undefined ? fields.buttonLink : item.buttonLink,
       fields.mediaType !== undefined ? fields.mediaType : item.mediaType,
       fields.mediaId !== undefined ? fields.mediaId : item.mediaId,
       fields.order !== undefined ? fields.order : item.displayOrder,

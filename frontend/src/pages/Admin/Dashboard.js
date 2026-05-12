@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { FileText, Image as ImageIcon, ShoppingBag, Film } from 'lucide-react';
+import { Image as ImageIcon, ShoppingBag, Film } from 'lucide-react';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
-    posts: 0,
     media: 0,
     products: 0,
     sliderItems: 0
@@ -14,15 +13,13 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [postsRes, mediaRes, productsRes, sliderRes] = await Promise.all([
-          api.get('/posts?limit=1'),
+        const [mediaRes, productsRes, sliderRes] = await Promise.all([
           api.get('/media?limit=1'),
           api.get('/products?limit=1'),
           api.get('/slider')
         ]);
 
         setStats({
-          posts: postsRes.data.total || 0,
           media: mediaRes.data.total || 0,
           products: productsRes.data.total || 0,
           sliderItems: sliderRes.data.length || 0
@@ -50,12 +47,6 @@ const Dashboard = () => {
       value: stats.sliderItems,
       icon: <Film size={24} className="text-black" />,
       color: 'bg-purple-100'
-    },
-    {
-      title: 'Total Posts',
-      value: stats.posts,
-      icon: <FileText size={24} className="text-black" />,
-      color: 'bg-green-100'
     },
     {
       title: 'Media Files',
@@ -89,7 +80,7 @@ const Dashboard = () => {
       </div>
 
       {/* Quick Stats Section */}
-      <div className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="mt-12 grid grid-cols-1 lg:grid-cols-1 gap-8">
         {/* Recent Activity Placeholder */}
         <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
           <h2 className="text-xl font-serif font-bold mb-4">Quick Actions</h2>
@@ -98,31 +89,7 @@ const Dashboard = () => {
             <li>✓ Customize hero section with media</li>
             <li>✓ Create and reorder slider items</li>
             <li>✓ Upload and manage media files</li>
-            <li>✓ Manage blog posts and content</li>
           </ul>
-        </div>
-
-        {/* System Info */}
-        <div className="bg-white p-6 rounded-lg border border-border shadow-sm">
-          <h2 className="text-xl font-serif font-bold mb-4">System Info</h2>
-          <dl className="space-y-3 text-sm">
-            <div>
-              <dt className="text-gray-dark">API Status</dt>
-              <dd className="font-medium text-green-600">✓ Connected</dd>
-            </div>
-            <div>
-              <dt className="text-gray-dark">Database</dt>
-              <dd className="font-medium">MongoDB</dd>
-            </div>
-            <div>
-              <dt className="text-gray-dark">Upload Folder</dt>
-              <dd className="font-medium">/uploads</dd>
-            </div>
-            <div>
-              <dt className="text-gray-dark">Authentication</dt>
-              <dd className="font-medium">JWT</dd>
-            </div>
-          </dl>
         </div>
       </div>
     </div>
