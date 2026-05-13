@@ -1,16 +1,21 @@
-const jwt = require("jsonwebtoken");
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-router.get("/verify/:token", async (req, res) => {
+router.get('/verify/:token', async (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   try {
     const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
+    if (!decoded.email) throw new Error('Invalid token payload');
 
-    console.log("VERIFIED EMAIL:", decoded.email);
-
-    // აქ შეგიძლია DB update:
-    // user.verified = true
-
-    return res.redirect("https://daftk.ge/");
+    User.markVerified(decoded.email);
+    console.log('✅ Email verified:', decoded.email);
+    return res.redirect(`${frontendUrl}/?verified=1`);
   } catch (err) {
-    return res.status(400).send("Invalid or expired token");
+    console.error('❌ Verification failed:', err.message);
+    return res.redirect(`${frontendUrl}/?verified=0`);
   }
 });
+
+module.exports = router;

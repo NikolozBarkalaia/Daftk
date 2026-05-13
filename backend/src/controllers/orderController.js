@@ -1,8 +1,12 @@
 const Order = require('../models/Order');
+const { sendOrderConfirmationEmail, sendOrderLookupEmail } = require('../services/emailService');
 
-// @desc    Create new order
+// In-memory OTP store { email -> { code, expiresAt } }
+const otpStore = new Map();
+
+// @desc    Create new order (guest – no auth required)
 // @route   POST /api/orders
-// @access  Private
+// @access  Public
 const createOrder = (req, res) => {
   const { items, shippingAddress, subtotal, total, notes } = req.body;
 
@@ -12,16 +16,22 @@ const createOrder = (req, res) => {
   if (!shippingAddress || !shippingAddress.address || !shippingAddress.city) {
     return res.status(400).json({ message: 'Shipping address is required' });
   }
+  if (!shippingAddress.email) {
+    return res.status(400).json({ message: 'Email address is required' });
+  }
 
   try {
     const order = Order.create({
-      userId: req.user._id,
+      userId: null, // guest orders have no user account
       items,
       shippingAddress,
       subtotal: Number(subtotal) || 0,
       total: Number(total) || Number(subtotal) || 0,
       notes,
     });
+
+    sendOrderConfirmationEmail(shippingAddress.email, order).catch(() => {});
+
     res.status(201).json(order);
   } catch (err) {
     console.error(err);
@@ -29,31 +39,27 @@ const createOrder = (req, res) => {
   }
 };
 
-// @desc    Get logged-in user's orders
-// @route   GET /api/orders/myorders
-// @access  Private
-const getMyOrders = (req, res) => {
+// @desc    Get order by token (public, unguessable)
+// @route   GET /api/orders/t/:token
+// @access  Public
+const getOrderByToken = (req, res) => {
   try {
-    const orders = Order.findByUser(req.user._id);
-    res.json(orders);
+    const order = Order.findByToken(req.params.token);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Failed to fetch orders' });
+    res.status(500).json({ message: 'Failed to fetch order' });
   }
 };
 
-// @desc    Get order by ID
+// @desc    Get order by ID (admin use)
 // @route   GET /api/orders/:id
-// @access  Private
+// @access  Public
 const getOrderById = (req, res) => {
   try {
     const order = Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
-
-    // User can only view their own orders (admin can view all)
-    if (!req.user.isAdmin && order.userId !== req.user._id) {
-      return res.status(403).json({ message: 'Not authorized to view this order' });
-    }
     res.json(order);
   } catch (err) {
     console.error(err);
@@ -97,4 +103,48 @@ const updateOrderStatus = (req, res) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, getOrderById, getAllOrders, updateOrderStatus };
+// @desc    Send OTP to email for order lookup
+// @route   POST /api/orders/request-lookup
+// @access  Public
+const requestOrderLookup = async (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes('@')) {
+    return res.status(400).json({ message: 'Valid email is required' });
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore.set(email.toLowerCase(), { code, expiresAt: Date.now() + 10 * 60 * 1000 });
+
+  await sendOrderLookupEmail(email, code).catch(() => {});
+
+  res.json({ message: 'Verification code sent' });
+};
+
+// @desc    Verify OTP and return orders for that email
+// @route   POST /api/orders/verify-lookup
+// @access  Public
+const verifyOrderLookup = (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ message: 'Email and code are required' });
+  }
+
+  const stored = otpStore.get(email.toLowerCase());
+  if (!stored || stored.code !== String(code) || Date.now() > stored.expiresAt) {
+    return res.status(401).json({ message: 'Invalid or expired code' });
+  }
+
+  otpStore.delete(email.toLowerCase());
+  const orders = Order.findByEmail(email);
+  res.json(orders);
+};
+
+module.exports = {
+  createOrder,
+  getOrderByToken,
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus,
+  requestOrderLookup,
+  verifyOrderLookup,
+};

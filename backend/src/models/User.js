@@ -9,6 +9,7 @@ function format(row, includePassword = false) {
     name: row.name,
     email: row.email,
     isAdmin: row.isAdmin === 1,
+    emailVerified: row.emailVerified === 1,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -42,6 +43,12 @@ const User = {
 
   deleteAll() {
     db.prepare('DELETE FROM users').run();
+  },
+
+  markVerified(email) {
+    db.prepare(
+      `UPDATE users SET emailVerified = 1, updatedAt = datetime('now') WHERE email = ?`
+    ).run(email);
   },
 };
 

@@ -10,7 +10,7 @@ if (!fs.existsSync(dataDir)) {
 const db = new DatabaseSync(path.join(dataDir, 'daftk.db'));
 
 db.exec("PRAGMA journal_mode = WAL");
-db.exec("PRAGMA foreign_keys = ON");
+// Foreign keys intentionally OFF: orders support guests (no userId)
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
@@ -64,6 +64,13 @@ try {
   db.exec(`
     ALTER TABLE products ADD COLUMN sizeStock TEXT DEFAULT '{}';
   `);
+}
+
+// Migration: Add emailVerified column if it doesn't exist
+try {
+  db.prepare("SELECT emailVerified FROM users LIMIT 1").get();
+} catch (err) {
+  db.exec(`ALTER TABLE users ADD COLUMN emailVerified INTEGER NOT NULL DEFAULT 0;`);
 }
 
 // Posts table removed - feature is no longer used
@@ -144,5 +151,52 @@ db.exec(`
 `);
 
 console.log('SQLite connected: data/daftk.db');
+
+// Migration: drop FK on orders.userId and make it nullable (guest support)
+try {
+  const cols = db.prepare("PRAGMA table_info(orders)").all();
+  const userIdCol = cols.find(c => c.name === 'userId');
+  // If userId is NOT NULL we need to recreate the table without the FK
+  if (userIdCol && userIdCol.notnull === 1) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      BEGIN;
+      CREATE TABLE IF NOT EXISTS orders_v2 (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId INTEGER,
+        items TEXT NOT NULL DEFAULT '[]',
+        shippingAddress TEXT NOT NULL DEFAULT '{}',
+        subtotal REAL NOT NULL DEFAULT 0,
+        total REAL NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'pending',
+        notes TEXT,
+        createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+        updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      INSERT INTO orders_v2 SELECT * FROM orders;
+      DROP TABLE orders;
+      ALTER TABLE orders_v2 RENAME TO orders;
+      COMMIT;
+    `);
+    console.log('✅ orders table migrated: userId is now nullable, FK removed');
+  }
+} catch (err) {
+  console.error('orders migration error:', err.message);
+}
+
+// Migration: add token column for unguessable order URLs
+try {
+  db.prepare("SELECT token FROM orders LIMIT 1").get();
+} catch {
+  const { randomUUID } = require('node:crypto');
+  db.exec(`ALTER TABLE orders ADD COLUMN token TEXT`);
+  // Backfill existing rows with a unique token
+  const rows = db.prepare("SELECT id FROM orders WHERE token IS NULL").all();
+  const upd = db.prepare("UPDATE orders SET token = ? WHERE id = ?");
+  for (const row of rows) upd.run(randomUUID(), row.id);
+  // Add unique index
+  db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_token ON orders(token)`);
+  console.log('✅ orders.token column added and backfilled');
+}
 
 module.exports = db;

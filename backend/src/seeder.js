@@ -170,7 +170,9 @@ const importData = async () => {
     db.exec('DELETE FROM hero');
     db.exec('DELETE FROM media');
     db.exec('DELETE FROM products');
-    db.exec("DELETE FROM sqlite_sequence WHERE name IN ('slider_items','hero','media','products','users')");
+    db.exec('DELETE FROM orders');
+    db.exec('DELETE FROM contact_messages');
+    db.exec("DELETE FROM sqlite_sequence WHERE name IN ('slider_items','hero','media','products','users','orders','contact_messages')");
     User.deleteAll();
 
     // ── Admin user ─────────────────────────────────────────────────────────

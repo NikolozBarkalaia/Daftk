@@ -8,11 +8,30 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const userInfo = localStorage.getItem('userInfo');
   if (userInfo) {
-    const { token } = JSON.parse(userInfo);
-    config.headers.Authorization = `Bearer ${token}`;
+    try {
+      const { token } = JSON.parse(userInfo);
+      if (token) config.headers.Authorization = `Bearer ${token}`;
+    } catch {
+      localStorage.removeItem('userInfo');
+    }
   }
   return config;
 });
+
+// Interceptor to handle 401 – clear stale session and redirect to admin login
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+      if (isAdminPath && !window.location.pathname.endsWith('/login')) {
+        localStorage.removeItem('userInfo');
+        window.location.href = '/admin/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
 
@@ -26,7 +45,11 @@ export const getMediaUrl = (url) => {
 
 // ─── Order API ───────────────────────────────────────────────
 export const createOrder = (orderData) => api.post('/orders', orderData);
-export const getMyOrders = () => api.get('/orders/myorders');
+export const getOrderByToken = (token) => api.get(`/orders/t/${token}`);
 export const getOrderById = (id) => api.get(`/orders/${id}`);
 export const getAllOrders = () => api.get('/orders');
 export const updateOrderStatus = (id, status) => api.put(`/orders/${id}/status`, { status });
+
+// ─── Guest order lookup (OTP) ────────────────────────────────
+export const requestOrderLookup = (email) => api.post('/orders/request-lookup', { email });
+export const verifyOrderLookup = (email, code) => api.post('/orders/verify-lookup', { email, code });

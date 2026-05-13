@@ -24,7 +24,6 @@ import MyOrders from './pages/MyOrders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
-import Register from './pages/Register';
 
 function App() {
   return (
@@ -49,12 +48,11 @@ function App() {
         <Route path="/product/:id" element={<Product />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
-        <Route path="/order-confirmation/:id" element={<OrderConfirmation />} />
+        <Route path="/order-confirmation/:token" element={<OrderConfirmation />} />
         <Route path="/orders" element={<MyOrders />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/admin/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
       </Route>
 
       {/* Catch-all */}

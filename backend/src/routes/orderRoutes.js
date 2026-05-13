@@ -3,15 +3,23 @@ const router = express.Router();
 const { protect, admin } = require('../middleware/authMiddleware');
 const {
   createOrder,
-  getMyOrders,
+  getOrderByToken,
   getOrderById,
   getAllOrders,
   updateOrderStatus,
+  requestOrderLookup,
+  verifyOrderLookup,
 } = require('../controllers/orderController');
 
-router.route('/').post(protect, createOrder).get(protect, admin, getAllOrders);
-router.route('/myorders').get(protect, getMyOrders);
-router.route('/:id').get(protect, getOrderById);
-router.route('/:id/status').put(protect, admin, updateOrderStatus);
+// Admin only (must be before /:id wildcard)
+router.get('/', protect, admin, getAllOrders);
+router.put('/:id/status', protect, admin, updateOrderStatus);
+
+// Public
+router.post('/', createOrder);
+router.post('/request-lookup', requestOrderLookup);
+router.post('/verify-lookup', verifyOrderLookup);
+router.get('/t/:token', getOrderByToken);  // unguessable token-based lookup
+router.get('/:id', getOrderById);
 
 module.exports = router;

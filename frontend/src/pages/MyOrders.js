@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Package, ChevronRight } from 'lucide-react';
-import { AuthContext } from '../context/AuthContext';
-import { getMyOrders } from '../services/api';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Package, ChevronRight, Mail, KeyRound, RotateCcw, Check } from 'lucide-react';
+import { requestOrderLookup, verifyOrderLookup, getOrderByToken, getMediaUrl } from '../services/api';
+
+const ORDERS_KEY = 'daftk_orders';
 
 const STATUS_LABEL = {
   pending: 'Received',
@@ -12,82 +13,298 @@ const STATUS_LABEL = {
   cancelled: 'Cancelled',
 };
 
-const MyOrders = () => {
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+const mergeOrders = (local, fromEmail) => {
+  const map = new Map();
+  [...local, ...fromEmail].forEach((o) => map.set(o.id, o));
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+};
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/admin/login', { state: { from: '/orders' } });
-      return;
-    }
-    getMyOrders()
-      .then(({ data }) => setOrders(data))
-      .catch(() => setError('Failed to load orders.'))
-      .finally(() => setLoading(false));
-  }, [user, navigate]);
+/* ─── Step indicator ─────────────────────────────────────── */
+const STEPS = ['Email', 'Code', 'Done'];
 
-  if (loading) {
-    return (
-      <div className="container pb-20">
-        <p className="orders-loading">Loading your orders…</p>
-      </div>
-    );
-  }
+const StepIndicator = ({ step }) => {
+  const activeIdx = step === 'idle' ? 0 : step === 'sent' ? 1 : 2;
+  return (
+    <div className="ol-steps">
+      {STEPS.map((label, i) => (
+        <React.Fragment key={label}>
+          <div className={`ol-step${i <= activeIdx ? ' ol-step--active' : ''}`}>
+            <div className="ol-step__dot">
+              {i < activeIdx && <Check size={9} strokeWidth={3} />}
+            </div>
+            <span className="ol-step__label">{label}</span>
+          </div>
+          {i < STEPS.length - 1 && (
+            <div className={`ol-step__line${i < activeIdx ? ' ol-step__line--done' : ''}`} />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
+/* ─── Single order row ───────────────────────────────────── */
+const OrderRow = ({ order }) => {
+  const firstImage = order.items?.[0]?.image;
 
   return (
-    <div className="container pb-20">
-      <h1 className="page-title" style={{ textAlign: 'left' }}>My Orders</h1>
-
-      {error && <p className="checkout-error">{error}</p>}
-
-      {orders.length === 0 ? (
-        <div className="cart-empty">
-          <div className="cart-empty__icon"><Package size={64} strokeWidth={0.8} /></div>
-          <h2 className="cart-empty__title">No orders yet</h2>
-          <p className="cart-empty__sub">Your placed orders will appear here.</p>
-          <Link to="/shop" className="btn cart-empty__cta">Explore Collection</Link>
+    <li className="orders-row">
+      {firstImage && (
+        <div className="orders-row__thumb">
+          <img src={getMediaUrl(firstImage)} alt="" className="orders-row__thumb-img" />
         </div>
-      ) : (
+      )}
+
+      <div className="orders-row__body">
+        <div className="orders-row__meta">
+          <span className="orders-row__num">Order #{order.id}</span>
+          <span className="orders-row__date">
+            {new Date(order.createdAt).toLocaleDateString('en-GB', {
+              day: '2-digit', month: 'short', year: 'numeric',
+            })}
+          </span>
+        </div>
+        <div className="orders-row__items">
+          {order.items.slice(0, 2).map((item, i) => (
+            <span key={i} className="orders-row__item-name">
+              {item.name}
+              {item.selectedSize ? <span className="orders-row__item-size"> · {item.selectedSize}</span> : ''} × {item.quantity}
+            </span>
+          ))}
+          {order.items.length > 2 && (
+            <span className="orders-row__more">
+              +{order.items.length - 2} more item{order.items.length - 2 > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="orders-row__right">
+        <span className={`order-badge order-badge--${order.status}`}>
+          {STATUS_LABEL[order.status] || order.status}
+        </span>
+        <span className="orders-row__total">€{Number(order.total).toFixed(2)}</span>
+        <Link to={`/order-confirmation/${order.token || order.id}`} className="orders-row__cta">
+          View <ChevronRight size={14} />
+        </Link>
+      </div>
+    </li>
+  );
+};
+
+/* ─── My Orders Page ─────────────────────────────────────── */
+const MyOrders = () => {
+  const [localOrders, setLocalOrders] = useState([]);
+  const [emailOrders, setEmailOrders] = useState([]);
+  const [localLoading, setLocalLoading] = useState(true);
+  const [step, setStep]               = useState('idle'); // 'idle' | 'sent' | 'verified'
+  const [emailInput, setEmailInput]   = useState('');
+  const [codeInput, setCodeInput]     = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
+
+  // Load orders by fetching each stored token from the backend
+  useEffect(() => {
+    let cancelled = false;
+    const raw = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
+    // Support legacy format (array of objects) and new format (array of token strings)
+    const tokens = raw.map((e) => (typeof e === 'string' ? e : e.token)).filter(Boolean);
+
+    if (tokens.length === 0) {
+      setLocalLoading(false);
+      return;
+    }
+
+    Promise.all(
+      tokens.map((token) =>
+        getOrderByToken(token)
+          .then(({ data }) => ({ token, data }))
+          .catch(() => ({ token, data: null }))
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      const validTokens = results.filter((r) => r.data !== null).map((r) => r.token);
+      const orders      = results.filter((r) => r.data !== null).map((r) => r.data);
+
+      // Prune stale tokens from localStorage
+      if (validTokens.length !== tokens.length) {
+        localStorage.setItem(ORDERS_KEY, JSON.stringify(validTokens));
+      }
+
+      setLocalOrders(orders);
+      setLocalLoading(false);
+    });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  const allOrders = mergeOrders(localOrders, emailOrders);
+
+  /* ── Request OTP ── */
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+    if (!emailInput.trim()) return;
+    setError('');
+    setLoading(true);
+    try {
+      await requestOrderLookup(emailInput.trim());
+      setStep('sent');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ── Verify OTP ── */
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    if (codeInput.length < 6) return;
+    setError('');
+    setLoading(true);
+    try {
+      const { data } = await verifyOrderLookup(emailInput.trim(), codeInput.trim());
+      setEmailOrders(data);
+      setStep('verified');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Invalid or expired code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetLookup = () => {
+    setStep('idle');
+    setEmailInput('');
+    setCodeInput('');
+    setError('');
+    setEmailOrders([]);
+  };
+
+  const hasOrders = allOrders.length > 0;
+
+  return (
+    <div className="container" style={{ paddingBottom: '5rem' }}>
+      {/* ── Page header ── */}
+      <div className="orders-page-header">
+        <h1 className="orders-page-header__title">My Orders</h1>
+        {hasOrders && (
+          <span className="orders-page-header__count">
+            {allOrders.length} order{allOrders.length > 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      {/* ── Order list ── */}
+      {localLoading ? (
+        <p style={{ color: 'var(--color-muted)', fontSize: '0.9rem', marginBottom: '2rem' }}>
+          Loading your orders…
+        </p>
+      ) : hasOrders && (
         <ul className="orders-list">
-          {orders.map((order) => (
-            <li key={order.id} className="orders-row">
-              <div className="orders-row__info">
-                <span className="orders-row__num">Order #{order.id}</span>
-                <span className="orders-row__date">
-                  {new Date(order.createdAt).toLocaleDateString('en-GB', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                  })}
-                </span>
-              </div>
-
-              <div className="orders-row__items-preview">
-                {order.items.slice(0, 2).map((item, i) => (
-                  <span key={i} className="orders-row__item-name">
-                    {item.name} × {item.quantity}
-                  </span>
-                ))}
-                {order.items.length > 2 && (
-                  <span className="orders-row__more">+{order.items.length - 2} more</span>
-                )}
-              </div>
-
-              <div className="orders-row__right">
-                <span className={`order-badge order-badge--${order.status}`}>
-                  {STATUS_LABEL[order.status] || order.status}
-                </span>
-                <span className="orders-row__total">€{Number(order.total).toFixed(2)}</span>
-                <Link to={`/order-confirmation/${order.id}`} className="orders-row__detail">
-                  Details <ChevronRight size={15} />
-                </Link>
-              </div>
-            </li>
+          {allOrders.map((order) => (
+            <OrderRow key={order.id} order={order} />
           ))}
         </ul>
       )}
+
+      {/* ── Email lookup section ── */}
+      <div className={`orders-lookup${hasOrders ? ' orders-lookup--with-orders' : ''}`}>
+        <div className="orders-lookup__card">
+          {/* Icon hint when no local orders, before form starts */}
+          {!hasOrders && step === 'idle' && (
+            <div className="ol-no-orders-hint">
+              <Package size={32} strokeWidth={0.75} />
+              <span>No orders on this device — look up by email below</span>
+            </div>
+          )}
+          <StepIndicator step={step} />
+
+          {/* ─ Verified ─ */}
+          {step === 'verified' && (
+            <div className="ol-verified">
+              <div className="ol-verified__check">
+                <Check size={16} strokeWidth={2.5} />
+              </div>
+              <div className="ol-verified__info">
+                <p className="ol-verified__label">Orders loaded for</p>
+                <p className="ol-verified__email">{emailInput}</p>
+                {emailOrders.length === 0 && (
+                  <p className="ol-verified__empty">No orders found with this email address.</p>
+                )}
+              </div>
+              <button className="ol-reset-btn" onClick={resetLookup}>
+                <RotateCcw size={12} /> Search another email
+              </button>
+            </div>
+          )}
+
+          {/* ─ Idle: enter email ─ */}
+          {step === 'idle' && (
+            <>
+              <h2 className="orders-lookup__title">Find orders by email</h2>
+              <p className="orders-lookup__sub">
+                Enter the email you used at checkout. We'll send a one-time code to verify it's you.
+              </p>
+              <form className="ol-form" onSubmit={handleRequestCode}>
+                <input
+                  type="email"
+                  className="input-field ol-form__input"
+                  placeholder="your@email.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+                <button type="submit" className="btn ol-form__btn" disabled={loading}>
+                  {loading ? 'Sending…' : 'Send Code'}
+                </button>
+              </form>
+              {error && <p className="ol-error">{error}</p>}
+            </>
+          )}
+
+          {/* ─ Sent: enter code ─ */}
+          {step === 'sent' && (
+            <>
+              <div className="ol-sent-notice">
+                <Mail size={13} strokeWidth={1.5} />
+                Code sent to <strong>{emailInput}</strong>
+              </div>
+              <h2 className="orders-lookup__title">Enter your code</h2>
+              <p className="orders-lookup__sub">
+                Check your inbox for a 6-digit code. It expires in 10 minutes.
+              </p>
+              <form className="ol-form ol-form--code" onSubmit={handleVerify}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="input-field ol-form__code-input"
+                  placeholder="000000"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, ''))}
+                  required
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="btn ol-form__btn"
+                  disabled={loading || codeInput.length < 6}
+                >
+                  {loading ? 'Verifying…' : <><KeyRound size={14} /> Verify</>}
+                </button>
+              </form>
+              {error && <p className="ol-error">{error}</p>}
+              <button className="ol-change-email-btn" onClick={resetLookup}>
+                Use a different email
+              </button>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

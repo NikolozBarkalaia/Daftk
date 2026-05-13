@@ -1,11 +1,17 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { sendVerificationEmail } = require('../services/emailService');
 
-// Generate JWT
+// Generate JWT (for auth sessions)
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
+};
+
+// Generate short-lived email verification token
+const generateVerifyToken = (email) => {
+  return jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '24h' });
 };
 
 // @desc    Register new user
@@ -27,11 +33,15 @@ const registerUser = async (req, res) => {
 
     const user = await User.create({ name, email, password });
 
+    // Send verification email (non-blocking – don't fail registration if email fails)
+    sendVerificationEmail(user.email, generateVerifyToken(user.email)).catch(() => {});
+
     res.status(201).json({
       _id: user.id,
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      emailVerified: user.emailVerified,
       token: generateToken(user.id),
     });
   } catch (error) {
@@ -59,6 +69,7 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        emailVerified: user.emailVerified,
         token: generateToken(user.id),
       });
     } else {

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { CheckCircle, Package, ArrowRight } from 'lucide-react';
-import { getOrderById } from '../services/api';
+import { getOrderByToken } from '../services/api';
 
 const STATUS_LABEL = {
   pending:    'Order Received',
@@ -12,19 +12,19 @@ const STATUS_LABEL = {
 };
 
 const OrderConfirmation = () => {
-  const { id } = useParams();
+  const { token } = useParams();
   const location = useLocation();
   const [order, setOrder] = useState(location.state?.order || null);
   const [loading, setLoading] = useState(!location.state?.order);
 
   useEffect(() => {
     if (!order) {
-      getOrderById(id)
+      getOrderByToken(token)
         .then(({ data }) => setOrder(data))
         .catch(() => {})
         .finally(() => setLoading(false));
     }
-  }, [id, order]);
+  }, [token, order]);
 
   if (loading) {
     return (

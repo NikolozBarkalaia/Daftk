@@ -1,9 +1,22 @@
-import React, { useState, useContext } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Lock, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { AuthContext } from '../context/AuthContext';
 import { createOrder, getMediaUrl } from '../services/api';
+
+const ORDERS_KEY = 'daftk_orders';
+
+// Only persist the token — full data is always fetched fresh from the backend
+const saveOrderToken = (token) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
+    // Handle legacy format (array of full order objects)
+    const tokens = existing.map((e) => (typeof e === 'string' ? e : e.token)).filter(Boolean);
+    if (!tokens.includes(token)) {
+      localStorage.setItem(ORDERS_KEY, JSON.stringify([token, ...tokens]));
+    }
+  } catch {}
+};
 
 /* ─── Field Component ─────────────────────────────────────── */
 const Field = ({ label, name, value, onChange, type = 'text', required, placeholder }) => (
@@ -28,13 +41,12 @@ const Field = ({ label, name, value, onChange, type = 'text', required, placehol
 /* ─── Checkout Page ───────────────────────────────────────── */
 const Checkout = () => {
   const { cartItems, cartSubtotal, cartCount, clearCart } = useCart();
-  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
-    firstName: user?.name?.split(' ')[0] || '',
-    lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-    email: user?.email || '',
+    firstName: '',
+    lastName: '',
+    email: '',
     address: '',
     city: '',
     country: '',
@@ -45,24 +57,6 @@ const Checkout = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-
-  if (!user) {
-    return (
-      <div className="container pb-20">
-        <div className="checkout-auth-wall">
-          <Lock size={40} strokeWidth={0.8} />
-          <h2>Sign in to continue</h2>
-          <p>You need an account to place an order.</p>
-          <Link to="/admin/login" state={{ from: '/checkout' }} className="btn">
-            Sign In
-          </Link>
-          <Link to="/register" className="checkout-auth-wall__register">
-            New here? Create an account
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   if (cartItems.length === 0) {
     return (
@@ -97,7 +91,7 @@ const Checkout = () => {
     };
 
     const items = cartItems.map((item) => ({
-      _id: item._id, // Adding this to match Order model expectation
+      _id: item._id,
       productId: item._id,
       name: item.name,
       price: item.price,
@@ -114,8 +108,9 @@ const Checkout = () => {
         total: cartSubtotal,
         notes: form.notes,
       });
+      saveOrderToken(data.token);
       clearCart();
-      navigate(`/order-confirmation/${data.id}`, { state: { order: data } });
+      navigate(`/order-confirmation/${data.token}`, { state: { order: data } });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to place order. Please try again.');
       setSubmitting(false);
