@@ -4,6 +4,24 @@ import { Package, ChevronRight, Mail, KeyRound, RotateCcw, Check } from 'lucide-
 import { requestOrderLookup, verifyOrderLookup, getOrderByToken, getMediaUrl } from '../services/api';
 
 const ORDERS_KEY = 'daftk_orders';
+const STATUS_CACHE_KEY = 'daftk_order_statuses'; // { [token]: status }
+
+// Merge new tokens into localStorage and update status cache
+const persistOrders = (orders) => {
+  try {
+    const existing = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]');
+    const tokens = existing.map((e) => (typeof e === 'string' ? e : e.token)).filter(Boolean);
+    const newTokens = orders.map((o) => o.token).filter(Boolean);
+    const merged = [...new Set([...tokens, ...newTokens])];
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(merged));
+
+    // Update status cache
+    const cache = JSON.parse(localStorage.getItem(STATUS_CACHE_KEY) || '{}');
+    orders.forEach((o) => { if (o.token) cache[o.token] = o.status; });
+    localStorage.setItem(STATUS_CACHE_KEY, JSON.stringify(cache));
+    window.dispatchEvent(new Event('ordersUpdated'));
+  } catch {}
+};
 
 const STATUS_LABEL = {
   pending: 'Received',
@@ -134,6 +152,7 @@ const MyOrders = () => {
       }
 
       setLocalOrders(orders);
+      persistOrders(orders); // keep status cache fresh
       setLocalLoading(false);
     });
 
@@ -167,6 +186,7 @@ const MyOrders = () => {
     try {
       const { data } = await verifyOrderLookup(emailInput.trim(), codeInput.trim());
       setEmailOrders(data);
+      persistOrders(data); // save tokens + statuses to localStorage
       setStep('verified');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid or expired code.');

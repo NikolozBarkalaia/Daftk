@@ -749,8 +749,6 @@ ul {
   gap: 8px;
   margin-top: 1.25rem;
   margin-bottom: 0.35rem;
-  opacity: 0.55;
-  cursor: not-allowed !important;
 }
 
 .cart-summary__checkout-note {

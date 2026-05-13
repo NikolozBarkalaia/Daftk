@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { createOrder, getMediaUrl } from '../services/api';
 
 const ORDERS_KEY = 'daftk_orders';
+const STATUS_CACHE_KEY = 'daftk_order_statuses';
 
 // Only persist the token — full data is always fetched fresh from the backend
 const saveOrderToken = (token) => {
@@ -15,6 +16,11 @@ const saveOrderToken = (token) => {
     if (!tokens.includes(token)) {
       localStorage.setItem(ORDERS_KEY, JSON.stringify([token, ...tokens]));
     }
+    // Seed status cache as pending
+    const cache = JSON.parse(localStorage.getItem(STATUS_CACHE_KEY) || '{}');
+    cache[token] = 'pending';
+    localStorage.setItem(STATUS_CACHE_KEY, JSON.stringify(cache));
+    window.dispatchEvent(new Event('ordersUpdated'));
   } catch {}
 };
 
