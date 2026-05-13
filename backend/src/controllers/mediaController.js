@@ -5,14 +5,14 @@ const path = require('path');
 // @desc    Upload new media file
 // @route   POST /api/media/upload
 // @access  Private/Admin
-const uploadMedia = (req, res) => {
+const uploadMedia = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
     const isVideo = req.file.mimetype.startsWith('video');
-    const media = Media.create({
+    const media = await Media.create({
       filename: req.file.filename,
       url: `/uploads/${req.file.filename}`,
       type: isVideo ? 'video' : 'image',
@@ -28,14 +28,16 @@ const uploadMedia = (req, res) => {
 // @desc    Get all media files
 // @route   GET /api/media
 // @access  Private/Admin
-const getMediaFiles = (req, res) => {
+const getMediaFiles = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const media = Media.find({ skip, limit });
-    const total = Media.countDocuments();
+    const [media, total] = await Promise.all([
+      Media.find({ skip, limit }),
+      Media.countDocuments(),
+    ]);
 
     res.status(200).json({
       media,
@@ -51,9 +53,9 @@ const getMediaFiles = (req, res) => {
 // @desc    Delete media file
 // @route   DELETE /api/media/:id
 // @access  Private/Admin
-const deleteMedia = (req, res) => {
+const deleteMedia = async (req, res) => {
   try {
-    const media = Media.findById(req.params.id);
+    const media = await Media.findById(req.params.id);
     if (!media) {
       return res.status(404).json({ message: 'Media not found' });
     }
@@ -63,7 +65,7 @@ const deleteMedia = (req, res) => {
       fs.unlinkSync(filePath);
     }
 
-    Media.delete(req.params.id);
+    await Media.delete(req.params.id);
     res.status(200).json({ message: 'Media removed' });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -74,5 +76,7 @@ module.exports = {
   uploadMedia,
   getMediaFiles,
   deleteMedia,
+};
+
 };
 

@@ -1,7 +1,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
-const db = require('./config/db');
+const { pool, init } = require('./config/db');
 const User = require('./models/User');
 const Product = require('./models/Product');
 const Media = require('./models/Media');
@@ -165,15 +165,19 @@ const products = [
 
 const importData = async () => {
   try {
+    await init();
     console.log('Clearing existing data...');
-    db.exec('DELETE FROM slider_items');
-    db.exec('DELETE FROM hero');
-    db.exec('DELETE FROM media');
-    db.exec('DELETE FROM products');
-    db.exec('DELETE FROM orders');
-    db.exec('DELETE FROM contact_messages');
-    db.exec("DELETE FROM sqlite_sequence WHERE name IN ('slider_items','hero','media','products','users','orders','contact_messages')");
-    User.deleteAll();
+    await pool.execute('DELETE FROM slider_items');
+    await pool.execute('DELETE FROM hero');
+    await pool.execute('DELETE FROM media');
+    await pool.execute('DELETE FROM products');
+    await pool.execute('DELETE FROM orders');
+    await pool.execute('DELETE FROM contact_messages');
+    await pool.execute('DELETE FROM users');
+    // Reset auto-increment counters
+    for (const t of ['slider_items','hero','media','products','orders','contact_messages','users']) {
+      await pool.execute(`ALTER TABLE ${t} AUTO_INCREMENT = 1`);
+    }
 
     // ── Admin user ─────────────────────────────────────────────────────────
     console.log('Creating admin user...');
@@ -181,15 +185,20 @@ const importData = async () => {
 
     // ── Media ──────────────────────────────────────────────────────────────
     console.log('Seeding media...');
-    const createdMedia = mediaItems.map(m => Media.create(m));
+    const createdMedia = [];
+    for (const m of mediaItems) {
+      createdMedia.push(await Media.create(m));
+    }
 
     // ── Products ───────────────────────────────────────────────────────────
     console.log('Seeding products...');
-    products.forEach(p => Product.create(p));
+    for (const p of products) {
+      await Product.create(p);
+    }
 
     // ── Hero (linked to first media item) ──────────────────────────────────
     console.log('Seeding hero...');
-    Hero.create({
+    await Hero.create({
       title: 'Wear What You Mean',
       subtitle: 'A curated edit of exceptional pieces for those who choose with care.',
       buttonText: 'Explore the Collection',
@@ -233,7 +242,9 @@ const importData = async () => {
         order: 2,
       },
     ];
-    sliderData.forEach(s => SliderItem.create(s));
+    for (const s of sliderData) {
+      await SliderItem.create(s);
+    }
 
     console.log('\n✓ Seeding complete!');
     console.log(`  • 1 admin user    → admin@daftk.com / password123`);
@@ -241,7 +252,8 @@ const importData = async () => {
     console.log(`  • ${products.length} products`);
     console.log(`  • 1 hero section`);
     console.log(`  • 3 slider items`);
-    process.exit();
+    await pool.end();
+    process.exit(0);
   } catch (error) {
     console.error('Seeder error:', error.message);
     console.error(error.stack);

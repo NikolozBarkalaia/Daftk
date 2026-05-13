@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 const Product = require('./Product');
 const { randomUUID } = require('node:crypto');
 
@@ -9,8 +9,8 @@ function format(row) {
     _id: row.id,
     token: row.token,
     userId: row.userId,
-    items: JSON.parse(row.items || '[]'),
-    shippingAddress: JSON.parse(row.shippingAddress || '{}'),
+    items: typeof row.items === 'string' ? JSON.parse(row.items || '[]') : (row.items || []),
+    shippingAddress: typeof row.shippingAddress === 'string' ? JSON.parse(row.shippingAddress || '{}') : (row.shippingAddress || {}),
     subtotal: row.subtotal,
     total: row.total,
     status: row.status,
@@ -21,68 +21,56 @@ function format(row) {
 }
 
 const Order = {
-  create({ userId, items, shippingAddress, subtotal, total, notes }) {
+  async create({ userId, items, shippingAddress, subtotal, total, notes }) {
     const token = randomUUID();
-    const info = db.prepare(
+    const [result] = await pool.execute(
       `INSERT INTO orders (userId, token, items, shippingAddress, subtotal, total, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      userId,
-      token,
-      JSON.stringify(items),
-      JSON.stringify(shippingAddress),
-      subtotal,
-      total,
-      notes || null
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [userId, token, JSON.stringify(items), JSON.stringify(shippingAddress), subtotal, total, notes || null]
     );
 
-    // Decrease stock for each item
-    items.forEach(item => {
-      if (item._id && item.selectedSize) {
-        Product.decreaseStock(item._id, item.selectedSize, item.quantity || 1);
-      }
-    });
+    // Decrease stock for each item (non-blocking, don't fail order if stock update fails)
+    const stockUpdates = items
+      .filter(item => item._id && item.selectedSize)
+      .map(item => Product.decreaseStock(item._id, item.selectedSize, item.quantity || 1).catch(() => {}));
+    await Promise.all(stockUpdates);
 
-    return format(db.prepare('SELECT * FROM orders WHERE id = ?').get(info.lastInsertRowid));
+    return this.findById(result.insertId);
   },
 
-  findById(id) {
-    return format(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
+  async findById(id) {
+    const [rows] = await pool.execute('SELECT * FROM orders WHERE id = ?', [id]);
+    return format(rows[0] || null);
   },
 
-  findByToken(token) {
-    return format(db.prepare('SELECT * FROM orders WHERE token = ?').get(token));
+  async findByToken(token) {
+    const [rows] = await pool.execute('SELECT * FROM orders WHERE token = ?', [token]);
+    return format(rows[0] || null);
   },
 
-  findByUser(userId) {
-    return db.prepare('SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC').all(userId).map(format);
+  async findByUser(userId) {
+    const [rows] = await pool.execute('SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC', [userId]);
+    return rows.map(format);
   },
 
-  findAll() {
-    return db.prepare('SELECT * FROM orders ORDER BY createdAt DESC').all().map(format);
+  async findAll() {
+    const [rows] = await pool.execute('SELECT * FROM orders ORDER BY createdAt DESC');
+    return rows.map(format);
   },
 
-  findByEmail(email) {
-    return db
-      .prepare('SELECT * FROM orders ORDER BY createdAt DESC')
-      .all()
-      .filter((row) => {
-        try {
-          const addr = JSON.parse(row.shippingAddress || '{}');
-          return addr.email && addr.email.toLowerCase() === email.toLowerCase();
-        } catch {
-          return false;
-        }
-      })
-      .map(format);
+  async findByEmail(email) {
+    const [rows] = await pool.execute(
+      `SELECT * FROM orders WHERE JSON_UNQUOTE(JSON_EXTRACT(shippingAddress, '$.email')) = ? ORDER BY createdAt DESC`,
+      [email]
+    );
+    return rows.map(format);
   },
 
-  updateStatus(id, status) {
-    db.prepare(
-      `UPDATE orders SET status = ?, updatedAt = datetime('now') WHERE id = ?`
-    ).run(status, id);
-    return format(db.prepare('SELECT * FROM orders WHERE id = ?').get(id));
+  async updateStatus(id, status) {
+    await pool.execute('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    return this.findById(id);
   },
 };
 
 module.exports = Order;
+

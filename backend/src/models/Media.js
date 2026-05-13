@@ -1,6 +1,4 @@
-const db = require('../config/db');
-
-function now() { return new Date().toISOString(); }
+const { pool } = require('../config/db');
 
 function format(row) {
   if (!row) return null;
@@ -8,30 +6,34 @@ function format(row) {
 }
 
 const Media = {
-  find({ skip = 0, limit = 20 } = {}) {
-    return db.prepare(
-      'SELECT * FROM media ORDER BY createdAt DESC LIMIT ? OFFSET ?'
-    ).all(limit, skip).map(format);
+  async find({ skip = 0, limit = 20 } = {}) {
+    const [rows] = await pool.execute(
+      'SELECT * FROM media ORDER BY createdAt DESC LIMIT ? OFFSET ?',
+      [limit, skip]
+    );
+    return rows.map(format);
   },
 
-  countDocuments() {
-    return db.prepare('SELECT COUNT(*) as c FROM media').get().c;
+  async countDocuments() {
+    const [rows] = await pool.execute('SELECT COUNT(*) as c FROM media');
+    return rows[0].c;
   },
 
-  findById(id) {
-    return format(db.prepare('SELECT * FROM media WHERE id = ?').get(id));
+  async findById(id) {
+    const [rows] = await pool.execute('SELECT * FROM media WHERE id = ?', [id]);
+    return format(rows[0] || null);
   },
 
-  create({ filename, url, type, size }) {
-    const ts = now();
-    const info = db.prepare(
-      'INSERT INTO media (filename, url, type, size, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)'
-    ).run(filename, url, type, size, ts, ts);
-    return this.findById(info.lastInsertRowid);
+  async create({ filename, url, type, size }) {
+    const [result] = await pool.execute(
+      'INSERT INTO media (filename, url, type, size) VALUES (?, ?, ?, ?)',
+      [filename, url, type, size]
+    );
+    return this.findById(result.insertId);
   },
 
-  delete(id) {
-    db.prepare('DELETE FROM media WHERE id = ?').run(id);
+  async delete(id) {
+    await pool.execute('DELETE FROM media WHERE id = ?', [id]);
   },
 };
 

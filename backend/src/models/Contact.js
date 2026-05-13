@@ -1,16 +1,19 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 
 const Contact = {
-  create({ name, email, message }) {
-    const info = db.prepare(
-      'INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)'
-    ).run(name, email, message);
-    return db.prepare('SELECT * FROM contact_messages WHERE id = ?').get(info.lastInsertRowid);
+  async create({ name, email, message }) {
+    const [result] = await pool.execute(
+      'INSERT INTO contact_messages (name, email, message) VALUES (?, ?, ?)',
+      [name, email, message]
+    );
+    const [rows] = await pool.execute('SELECT * FROM contact_messages WHERE id = ?', [result.insertId]);
+    return rows[0];
   },
 
-  findAll() {
-    return db.prepare('SELECT * FROM contact_messages ORDER BY createdAt DESC').all();
-  }
+  async findAll() {
+    const [rows] = await pool.execute('SELECT * FROM contact_messages ORDER BY createdAt DESC');
+    return rows;
+  },
 };
 
 module.exports = Contact;

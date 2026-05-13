@@ -7,7 +7,7 @@ const otpStore = new Map();
 // @desc    Create new order (guest – no auth required)
 // @route   POST /api/orders
 // @access  Public
-const createOrder = (req, res) => {
+const createOrder = async (req, res) => {
   const { items, shippingAddress, subtotal, total, notes } = req.body;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -21,7 +21,7 @@ const createOrder = (req, res) => {
   }
 
   try {
-    const order = Order.create({
+    const order = await Order.create({
       userId: null, // guest orders have no user account
       items,
       shippingAddress,
@@ -42,9 +42,9 @@ const createOrder = (req, res) => {
 // @desc    Get order by token (public, unguessable)
 // @route   GET /api/orders/t/:token
 // @access  Public
-const getOrderByToken = (req, res) => {
+const getOrderByToken = async (req, res) => {
   try {
-    const order = Order.findByToken(req.params.token);
+    const order = await Order.findByToken(req.params.token);
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (err) {
@@ -56,9 +56,16 @@ const getOrderByToken = (req, res) => {
 // @desc    Get order by ID (admin use)
 // @route   GET /api/orders/:id
 // @access  Public
-const getOrderById = (req, res) => {
+const getOrderById = async (req, res) => {
   try {
-    const order = Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Failed to fetch order' });
+  }
+};
     if (!order) return res.status(404).json({ message: 'Order not found' });
     res.json(order);
   } catch (err) {
@@ -70,9 +77,9 @@ const getOrderById = (req, res) => {
 // @desc    Get all orders (admin)
 // @route   GET /api/orders
 // @access  Admin
-const getAllOrders = (req, res) => {
+const getAllOrders = async (req, res) => {
   try {
-    const orders = Order.findAll();
+    const orders = await Order.findAll();
     res.json(orders);
   } catch (err) {
     console.error(err);
@@ -83,7 +90,7 @@ const getAllOrders = (req, res) => {
 // @desc    Update order status (admin)
 // @route   PUT /api/orders/:id/status
 // @access  Admin
-const updateOrderStatus = (req, res) => {
+const updateOrderStatus = async (req, res) => {
   const { status } = req.body;
   const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
 
@@ -92,10 +99,10 @@ const updateOrderStatus = (req, res) => {
   }
 
   try {
-    const order = Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    const updated = Order.updateStatus(req.params.id, status);
+    const updated = await Order.updateStatus(req.params.id, status);
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -135,7 +142,7 @@ const verifyOrderLookup = (req, res) => {
   }
 
   otpStore.delete(email.toLowerCase());
-  const orders = Order.findByEmail(email);
+  const orders = await Order.findByEmail(email);
   res.json(orders);
 };
 

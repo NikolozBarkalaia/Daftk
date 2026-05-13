@@ -1,4 +1,4 @@
-const db = require('../config/db');
+const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 function format(row, includePassword = false) {
@@ -8,8 +8,8 @@ function format(row, includePassword = false) {
     _id: row.id,
     name: row.name,
     email: row.email,
-    isAdmin: row.isAdmin === 1,
-    emailVerified: row.emailVerified === 1,
+    isAdmin: Boolean(row.isAdmin),
+    emailVerified: Boolean(row.emailVerified),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -19,36 +19,39 @@ function format(row, includePassword = false) {
 }
 
 const User = {
-  findOne({ email }) {
-    const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    return format(row, true);
+  async findOne({ email }) {
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+    return format(rows[0] || null, true);
   },
 
-  findById(id) {
-    const row = db.prepare(
-      'SELECT id, name, email, isAdmin, createdAt, updatedAt FROM users WHERE id = ?'
-    ).get(id);
-    return format(row);
+  async findById(id) {
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, isAdmin, emailVerified, createdAt, updatedAt FROM users WHERE id = ?',
+      [id]
+    );
+    return format(rows[0] || null);
   },
 
   async create({ name, email, password, isAdmin = false }) {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
-    const info = db.prepare(
-      'INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, ?)'
-    ).run(name, email, hashed, isAdmin ? 1 : 0);
-    const row = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
-    return format(row, true);
+    const [result] = await pool.execute(
+      'INSERT INTO users (name, email, password, isAdmin) VALUES (?, ?, ?, ?)',
+      [name, email, hashed, isAdmin ? 1 : 0]
+    );
+    const [rows] = await pool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
+    return format(rows[0], true);
   },
 
-  deleteAll() {
-    db.prepare('DELETE FROM users').run();
+  async deleteAll() {
+    await pool.execute('DELETE FROM users');
   },
 
-  markVerified(email) {
-    db.prepare(
-      `UPDATE users SET emailVerified = 1, updatedAt = datetime('now') WHERE email = ?`
-    ).run(email);
+  async markVerified(email) {
+    await pool.execute(
+      'UPDATE users SET emailVerified = 1 WHERE email = ?',
+      [email]
+    );
   },
 };
 

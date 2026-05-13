@@ -4,9 +4,9 @@ const Media = require('../models/Media');
 // @desc    Get hero content
 // @route   GET /api/hero
 // @access  Public
-const getHero = (req, res) => {
+const getHero = async (req, res) => {
   try {
-    const hero = Hero.findActive();
+    const hero = await Hero.findActive();
 
     if (!hero) {
       return res.status(200).json({
@@ -28,7 +28,7 @@ const getHero = (req, res) => {
 // @desc    Create or update hero content
 // @route   POST /api/admin/hero
 // @access  Private/Admin
-const updateHero = (req, res) => {
+const updateHero = async (req, res) => {
   try {
     const { title, subtitle, buttonText, buttonLink, mediaType, mediaId } = req.body;
 
@@ -37,20 +37,20 @@ const updateHero = (req, res) => {
     }
 
     if (mediaId) {
-      const mediaExists = Media.findById(mediaId);
+      const mediaExists = await Media.findById(mediaId);
       if (!mediaExists) {
         return res.status(404).json({ message: 'Media not found' });
       }
     }
 
-    const existing = Hero.findActive();
+    const existing = await Hero.findActive();
 
     if (existing) {
-      const updated = Hero.update(existing.id, { title, subtitle, buttonText, buttonLink, mediaType, mediaId: mediaId || existing.id });
+      const updated = await Hero.update(existing.id, { title, subtitle, buttonText, buttonLink, mediaType, mediaId: mediaId || existing.mediaId });
       return res.status(200).json(updated);
     }
 
-    const hero = Hero.create({ title, subtitle, buttonText, buttonLink, mediaType, mediaId, isActive: true });
+    const hero = await Hero.create({ title, subtitle, buttonText, buttonLink, mediaType, mediaId, isActive: true });
     res.status(200).json(hero);
   } catch (error) {
     res.status(400).json({ message: error.message });

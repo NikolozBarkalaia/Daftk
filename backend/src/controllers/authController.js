@@ -25,8 +25,8 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please add all fields' });
     }
 
-    // User.findOne is synchronous (node:sqlite DatabaseSync)
-    const userExists = User.findOne({ email });
+// User.findOne is synchronous (node:sqlite DatabaseSync)
+    const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
@@ -60,8 +60,8 @@ const loginUser = async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    // User.findOne is synchronous (node:sqlite DatabaseSync)
-    const user = User.findOne({ email });
+    // User.findOne is async (mysql2)
+    const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
       res.json({

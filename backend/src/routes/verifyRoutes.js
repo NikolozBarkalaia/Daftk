@@ -9,7 +9,7 @@ router.get('/verify/:token', async (req, res) => {
     const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
     if (!decoded.email) throw new Error('Invalid token payload');
 
-    User.markVerified(decoded.email);
+    await User.markVerified(decoded.email);
     console.log('✅ Email verified:', decoded.email);
     return res.redirect(`${frontendUrl}/?verified=1`);
   } catch (err) {

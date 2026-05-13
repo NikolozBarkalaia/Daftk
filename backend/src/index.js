@@ -6,8 +6,8 @@ const path = require('path');
 // Load env vars
 dotenv.config();
 
-// Initialize SQLite (creates tables on first run)
-require('./config/db');
+// Initialize MySQL (creates tables on first run)
+const { init } = require('./config/db');
 
 const app = express();
 
@@ -39,17 +39,24 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+init()
+  .then(() => {
+    const server = app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
 
-server.on('error', (err) => {
-  if (err.code === 'EADDRINUSE') {
-    console.error(`\n\x1b[31mERROR: Port ${PORT} is already in use.\x1b[0m`);
-    console.error('On macOS, AirPlay Receiver uses port 5000. Try a different port or disable AirPlay Receiver in System Settings → General → AirDrop & Handoff.\n');
-  } else {
-    console.error(err);
-  }
-  process.exit(1);
-});
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`\n\x1b[31mERROR: Port ${PORT} is already in use.\x1b[0m`);
+        console.error('On macOS, AirPlay Receiver uses port 5000. Try a different port or disable AirPlay Receiver in System Settings → General → AirDrop & Handoff.\n');
+      } else {
+        console.error(err);
+      }
+      process.exit(1);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to database:', err.message);
+    process.exit(1);
+  });
 
