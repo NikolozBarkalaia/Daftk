@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: '/api',
 });
 
 // Interceptor to add auth token
@@ -40,7 +40,7 @@ export default api;
 export const getMediaUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `http://localhost:5001${url}`;
+  return url;
 };
 
 // ─── Order API ───────────────────────────────────────────────
