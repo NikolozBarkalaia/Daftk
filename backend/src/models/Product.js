@@ -20,12 +20,12 @@ const Product = {
   async find({ category } = {}, { skip = 0, limit = 20 } = {}) {
     let rows;
     if (category) {
-      [rows] = await pool.execute(
+      [rows] = await pool.query(
         'SELECT * FROM products WHERE category = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
         [category, limit, skip]
       );
     } else {
-      [rows] = await pool.execute(
+      [rows] = await pool.query(
         'SELECT * FROM products ORDER BY createdAt DESC LIMIT ? OFFSET ?',
         [limit, skip]
       );
@@ -36,15 +36,15 @@ const Product = {
   async countDocuments({ category } = {}) {
     let rows;
     if (category) {
-      [rows] = await pool.execute('SELECT COUNT(*) as c FROM products WHERE category = ?', [category]);
+      [rows] = await pool.query('SELECT COUNT(*) as c FROM products WHERE category = ?', [category]);
     } else {
-      [rows] = await pool.execute('SELECT COUNT(*) as c FROM products');
+      [rows] = await pool.query('SELECT COUNT(*) as c FROM products');
     }
     return rows[0].c;
   },
 
   async findFeatured(limit = 8) {
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       'SELECT * FROM products WHERE isFeatured = 1 ORDER BY createdAt DESC LIMIT ?',
       [limit]
     );
@@ -52,12 +52,12 @@ const Product = {
   },
 
   async findById(id) {
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT * FROM products WHERE id = ?', [id]);
     return format(rows[0] || null);
   },
 
   async create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [], hasBadge = false, badgeText = null, badgeBgColor = '#000000', badgeTextColor = '#ffffff', sizeStock = {} }) {
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, hasBadge ? 1 : 0, badgeText, badgeBgColor, badgeTextColor, JSON.stringify(sizeStock)]
@@ -68,7 +68,7 @@ const Product = {
   async update(id, fields) {
     const p = await this.findById(id);
     if (!p) return null;
-    await pool.execute(
+    await pool.query(
       `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, hasBadge=?, badgeText=?, badgeBgColor=?, badgeTextColor=?, sizeStock=? WHERE id=?`,
       [
         fields.name !== undefined ? fields.name : p.name,
@@ -106,7 +106,7 @@ const Product = {
   },
 
   async delete(id) {
-    await pool.execute('DELETE FROM products WHERE id = ?', [id]);
+    await pool.query('DELETE FROM products WHERE id = ?', [id]);
   },
 };
 

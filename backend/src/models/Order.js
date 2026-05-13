@@ -23,7 +23,7 @@ function format(row) {
 const Order = {
   async create({ userId, items, shippingAddress, subtotal, total, notes }) {
     const token = randomUUID();
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       `INSERT INTO orders (userId, token, items, shippingAddress, subtotal, total, notes)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [userId, token, JSON.stringify(items), JSON.stringify(shippingAddress), subtotal, total, notes || null]
@@ -39,27 +39,27 @@ const Order = {
   },
 
   async findById(id) {
-    const [rows] = await pool.execute('SELECT * FROM orders WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT * FROM orders WHERE id = ?', [id]);
     return format(rows[0] || null);
   },
 
   async findByToken(token) {
-    const [rows] = await pool.execute('SELECT * FROM orders WHERE token = ?', [token]);
+    const [rows] = await pool.query('SELECT * FROM orders WHERE token = ?', [token]);
     return format(rows[0] || null);
   },
 
   async findByUser(userId) {
-    const [rows] = await pool.execute('SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC', [userId]);
+    const [rows] = await pool.query('SELECT * FROM orders WHERE userId = ? ORDER BY createdAt DESC', [userId]);
     return rows.map(format);
   },
 
   async findAll() {
-    const [rows] = await pool.execute('SELECT * FROM orders ORDER BY createdAt DESC');
+    const [rows] = await pool.query('SELECT * FROM orders ORDER BY createdAt DESC');
     return rows.map(format);
   },
 
   async findByEmail(email) {
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       `SELECT * FROM orders WHERE JSON_UNQUOTE(JSON_EXTRACT(shippingAddress, '$.email')) = ? ORDER BY createdAt DESC`,
       [email]
     );
@@ -67,7 +67,7 @@ const Order = {
   },
 
   async updateStatus(id, status) {
-    await pool.execute('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
     return this.findById(id);
   },
 };

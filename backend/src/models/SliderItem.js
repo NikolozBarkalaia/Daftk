@@ -2,7 +2,7 @@ const { pool } = require('../config/db');
 
 async function withMedia(row) {
   if (!row) return null;
-  const [rows] = await pool.execute('SELECT * FROM media WHERE id = ?', [row.mediaId]);
+  const [rows] = await pool.query('SELECT * FROM media WHERE id = ?', [row.mediaId]);
   const mediaRow = rows[0] || null;
   return {
     ...row,
@@ -15,7 +15,7 @@ async function withMedia(row) {
 
 const SliderItem = {
   async findAll({ isActive = true } = {}) {
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       'SELECT * FROM slider_items WHERE isActive = ? ORDER BY displayOrder ASC',
       [isActive ? 1 : 0]
     );
@@ -23,18 +23,18 @@ const SliderItem = {
   },
 
   async findById(id) {
-    const [rows] = await pool.execute('SELECT * FROM slider_items WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT * FROM slider_items WHERE id = ?', [id]);
     return withMedia(rows[0] || null);
   },
 
   async findMaxOrder() {
-    const [rows] = await pool.execute('SELECT MAX(displayOrder) as maxOrder FROM slider_items');
+    const [rows] = await pool.query('SELECT MAX(displayOrder) as maxOrder FROM slider_items');
     const val = rows[0].maxOrder;
     return val !== null ? val : -1;
   },
 
   async create({ title, subtitle, mediaType, mediaId, order, isActive = true }) {
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       'INSERT INTO slider_items (title, subtitle, mediaType, mediaId, displayOrder, isActive) VALUES (?, ?, ?, ?, ?, ?)',
       [title, subtitle, mediaType, mediaId, order, isActive ? 1 : 0]
     );
@@ -42,10 +42,10 @@ const SliderItem = {
   },
 
   async update(id, fields) {
-    const [rows] = await pool.execute('SELECT * FROM slider_items WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT * FROM slider_items WHERE id = ?', [id]);
     const item = rows[0];
     if (!item) return null;
-    await pool.execute(
+    await pool.query(
       'UPDATE slider_items SET title=?, subtitle=?, mediaType=?, mediaId=?, displayOrder=? WHERE id=?',
       [
         fields.title !== undefined ? fields.title : item.title,
@@ -60,11 +60,11 @@ const SliderItem = {
   },
 
   async updateOrder(id, order) {
-    await pool.execute('UPDATE slider_items SET displayOrder=? WHERE id=?', [order, id]);
+    await pool.query('UPDATE slider_items SET displayOrder=? WHERE id=?', [order, id]);
   },
 
   async delete(id) {
-    await pool.execute('DELETE FROM slider_items WHERE id = ?', [id]);
+    await pool.query('DELETE FROM slider_items WHERE id = ?', [id]);
   },
 };
 

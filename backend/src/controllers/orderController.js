@@ -66,13 +66,6 @@ const getOrderById = async (req, res) => {
     res.status(500).json({ message: 'Failed to fetch order' });
   }
 };
-    if (!order) return res.status(404).json({ message: 'Order not found' });
-    res.json(order);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Failed to fetch order' });
-  }
-};
 
 // @desc    Get all orders (admin)
 // @route   GET /api/orders
@@ -130,7 +123,7 @@ const requestOrderLookup = async (req, res) => {
 // @desc    Verify OTP and return orders for that email
 // @route   POST /api/orders/verify-lookup
 // @access  Public
-const verifyOrderLookup = (req, res) => {
+const verifyOrderLookup = async (req, res) => {
   const { email, code } = req.body;
   if (!email || !code) {
     return res.status(400).json({ message: 'Email and code are required' });

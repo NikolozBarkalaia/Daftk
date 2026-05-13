@@ -7,7 +7,7 @@ function format(row) {
 
 const Media = {
   async find({ skip = 0, limit = 20 } = {}) {
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       'SELECT * FROM media ORDER BY createdAt DESC LIMIT ? OFFSET ?',
       [limit, skip]
     );
@@ -15,17 +15,17 @@ const Media = {
   },
 
   async countDocuments() {
-    const [rows] = await pool.execute('SELECT COUNT(*) as c FROM media');
+    const [rows] = await pool.query('SELECT COUNT(*) as c FROM media');
     return rows[0].c;
   },
 
   async findById(id) {
-    const [rows] = await pool.execute('SELECT * FROM media WHERE id = ?', [id]);
+    const [rows] = await pool.query('SELECT * FROM media WHERE id = ?', [id]);
     return format(rows[0] || null);
   },
 
   async create({ filename, url, type, size }) {
-    const [result] = await pool.execute(
+    const [result] = await pool.query(
       'INSERT INTO media (filename, url, type, size) VALUES (?, ?, ?, ?)',
       [filename, url, type, size]
     );
@@ -33,7 +33,7 @@ const Media = {
   },
 
   async delete(id) {
-    await pool.execute('DELETE FROM media WHERE id = ?', [id]);
+    await pool.query('DELETE FROM media WHERE id = ?', [id]);
   },
 };
 
