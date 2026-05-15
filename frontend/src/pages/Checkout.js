@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Lock, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { createOrder, getMediaUrl } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 
 const ORDERS_KEY = 'daftk_orders';
 const STATUS_CACHE_KEY = 'daftk_order_statuses';
@@ -46,6 +47,8 @@ const Field = ({ label, name, value, onChange, type = 'text', required, placehol
 
 /* ─── Checkout Page ───────────────────────────────────────── */
 const Checkout = () => {
+  const { settings } = useSettings();
+  const SHIPPING_FEE = Number(settings.shipping_fee) || 0;
   const { cartItems, cartSubtotal, cartCount, clearCart } = useCart();
   const navigate = useNavigate();
 
@@ -111,7 +114,7 @@ const Checkout = () => {
         items,
         shippingAddress,
         subtotal: cartSubtotal,
-        total: cartSubtotal,
+        total: cartSubtotal + SHIPPING_FEE,
         notes: form.notes,
       });
       saveOrderToken(data.token);
@@ -193,7 +196,7 @@ const Checkout = () => {
                   <span className="checkout-summary__name">{item.name}</span>
                   {item.selectedSize && <span className="text-[10px] text-gray-dark uppercase font-medium">Size: {item.selectedSize}</span>}
                 </div>
-                <span className="checkout-summary__price">€{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="checkout-summary__price">₾{(item.price * item.quantity).toFixed(2)}</span>
               </li>
             ))}
           </ul>
@@ -203,19 +206,20 @@ const Checkout = () => {
           <div className="checkout-summary__lines">
             <div className="checkout-summary__line">
               <span>Subtotal</span>
-              <span>€{cartSubtotal.toFixed(2)}</span>
+              <span>₾{cartSubtotal.toFixed(2)}</span>
             </div>
             <div className="checkout-summary__line">
               <span>Shipping</span>
-              <span className="cart-summary__free">Complimentary</span>
+              <span>₾{SHIPPING_FEE.toFixed(2)}</span>
             </div>
+            <p className="text-xs text-gray-500 mt-1 mb-3 text-right">მიწოდება მოხდება 2-3 სამუშაო დღეში</p>
           </div>
 
           <div className="checkout-summary__divider" />
 
           <div className="checkout-summary__total">
             <span>Total</span>
-            <span>€{cartSubtotal.toFixed(2)}</span>
+            <span>₾{(cartSubtotal + SHIPPING_FEE).toFixed(2)}</span>
           </div>
         </aside>
       </div>

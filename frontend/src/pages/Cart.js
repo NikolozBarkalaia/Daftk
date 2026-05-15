@@ -4,6 +4,7 @@ import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { getMediaUrl } from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useNotification } from '../context/NotificationContext';
+import { useSettings } from '../context/SettingsContext';
 
 /* ─── Empty State ─────────────────────────────────────────── */
 const EmptyCart = () => (
@@ -52,9 +53,9 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
           </div>
         )}
         <div className="cart-item__prices">
-          <span className="cart-item__price">€{item.price}</span>
+          <span className="cart-item__price">₾{item.price}</span>
           {hasDiscount && (
-            <span className="cart-item__old-price">€{item.oldPrice}</span>
+            <span className="cart-item__old-price">₾{item.oldPrice}</span>
           )}
         </div>
       </div>
@@ -78,7 +79,7 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
         </button>
       </div>
 
-      <div className="cart-item__total">€{lineTotal}</div>
+      <div className="cart-item__total">₾{lineTotal}</div>
 
       <button
         className="cart-item__remove"
@@ -93,6 +94,9 @@ const CartItem = ({ item, onUpdate, onRemove }) => {
 
 /* ─── Order Summary ───────────────────────────────────────── */
 const OrderSummary = ({ subtotal, itemCount, onClear }) => {
+  const { settings } = useSettings();
+  const shippingFee = Number(settings.shipping_fee) || 0;
+
   return (
     <aside className="cart-summary">
       <h2 className="cart-summary__title">Order Summary</h2>
@@ -100,25 +104,25 @@ const OrderSummary = ({ subtotal, itemCount, onClear }) => {
       <div className="cart-summary__lines">
         <div className="cart-summary__line">
           <span>Items ({itemCount})</span>
-          <span>€{subtotal.toFixed(2)}</span>
+          <span>₾{subtotal.toFixed(2)}</span>
         </div>
         <div className="cart-summary__line">
           <span>Shipping</span>
-          <span className="cart-summary__free">Complimentary</span>
+          <span>₾{shippingFee.toFixed(2)}</span>
         </div>
+        <p className="text-[10px] text-gray-dark text-right uppercase tracking-wider mb-2">მიწოდება მოხდება 2-3 სამუშაო დღეში</p>
       </div>
 
       <div className="cart-summary__divider" />
 
       <div className="cart-summary__total">
         <span>Total</span>
-        <span>€{subtotal.toFixed(2)}</span>
+        <span>₾{(subtotal + shippingFee).toFixed(2)}</span>
       </div>
 
       <Link to="/checkout" className="btn cart-summary__checkout">
         Checkout <ArrowRight size={17} />
       </Link>
-      <p className="cart-summary__checkout-note">Free shipping on all orders</p>
 
       <Link to="/shop" className="btn-outline cart-summary__continue">
         Continue Shopping

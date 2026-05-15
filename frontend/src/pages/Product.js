@@ -160,10 +160,10 @@ const Product = () => {
           {/* Price Section */}
           <div className="mb-4">
             <div className="flex items-baseline gap-3 mb-2">
-              <span className="product-details-price">€{product.price}</span>
+              <span className="product-details-price">₾{product.price}</span>
               {hasDiscount && (
                 <>
-                  <span className="text-gray-dark line-through">€{product.oldPrice}</span>
+                  <span className="text-gray-dark line-through">₾{product.oldPrice}</span>
                   <span className="text-green-600 text-sm font-semibold">
                     Save {Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
                   </span>
@@ -203,7 +203,7 @@ const Product = () => {
             <p className="mt-2 text-xs text-gray-dark">
               {selectedSize && (
                 currentSizeStock > 0
-                  ? <span className="text-green-600 font-medium">{currentSizeStock} available in size {selectedSize}</span>
+                  ? <span className="text-green-600 font-medium">available in size {selectedSize}</span>
                   : <span className="text-red-500 font-medium">Size {selectedSize} is currently unavailable</span>
               )}
             </p>

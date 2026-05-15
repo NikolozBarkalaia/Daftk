@@ -1,10 +1,10 @@
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host:     process.env.DB_HOST     || 'localhost',
-  user:     process.env.DB_USER     || 'daftk',
-  password: process.env.DB_PASS     || '',
-  database: process.env.DB_NAME     || 'daftk',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'daftk',
+  password: process.env.DB_PASS || '',
+  database: process.env.DB_NAME || 'daftk',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -12,8 +12,15 @@ const pool = mysql.createPool({
 });
 
 const init = async () => {
-  const conn = await pool.getConnection();
+  let conn;
   try {
+    conn = await pool.getConnection();
+    
+    // Test connection
+    await conn.query('SELECT 1');
+    console.log('✅ MySQL connected');
+
+    // Create tables
     await conn.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -120,9 +127,28 @@ const init = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS site_settings (
+        setting_key VARCHAR(100) PRIMARY KEY,
+        setting_value TEXT NOT NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // Seed default settings
+    await conn.query(`
+      INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES 
+      ('home_featured_title', 'Featured Pieces'),
+      ('shop_collection_title', 'Collection'),
+      ('contact_page_title', 'Contact Us'),
+      ('shipping_fee', '5.00')
+    `);
+
     console.log('✅ MySQL connected and tables initialized');
+  } catch (err) {
+    console.error('❌ Database connection error:', err.message);
+    throw err;
   } finally {
-    conn.release();
+    if (conn) conn.release();
   }
 };
 

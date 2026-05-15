@@ -20,6 +20,7 @@ const Sidebar = () => {
     { name: 'Media', path: '/admin/media', icon: <ImageIcon size={20} /> },
     { name: 'Orders', path: '/admin/orders', icon: <ClipboardList size={20} /> },
     { name: 'Messages', path: '/admin/messages', icon: <Mail size={20} /> },
+    { name: 'Site Texts', path: '/admin/settings', icon: <Settings size={20} /> },
   ];
 
   return (

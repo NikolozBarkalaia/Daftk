@@ -27,6 +27,7 @@ app.use('/api/hero', require('./routes/heroRoutes'));
 app.use('/api/slider', require('./routes/sliderRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
 
 // ტესტირება
 // app.use('/api', require('./routes/testRoutes'));

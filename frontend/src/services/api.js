@@ -53,3 +53,8 @@ export const updateOrderStatus = (id, status) => api.put(`/orders/${id}/status`,
 // ─── Guest order lookup (OTP) ────────────────────────────────
 export const requestOrderLookup = (email) => api.post('/orders/request-lookup', { email });
 export const verifyOrderLookup = (email, code) => api.post('/orders/verify-lookup', { email, code });
+
+// ─── Site Settings ──────────────────────────────────────────
+export const getSettings = () => api.get('/settings');
+export const updateSettings = (data) => api.put('/settings', data);
+

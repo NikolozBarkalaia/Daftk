@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 import { useNotification } from '../context/NotificationContext';
+import { useSettings } from '../context/SettingsContext';
 
 const Contact = () => {
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -38,7 +40,7 @@ const Contact = () => {
 
   return (
     <div className="container" style={{ maxWidth: '600px', padding: '60px 20px' }}>
-      <h1 className="page-title">Contact Us</h1>
+      <h1 className="page-title">{settings.contact_page_title}</h1>
       <p style={{ textAlign: 'center', marginBottom: '40px', color: 'var(--color-gray-dark)' }}>
         For inquiries, please reach out to our concierge team.
       </p>

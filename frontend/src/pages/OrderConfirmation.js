@@ -74,7 +74,7 @@ const OrderConfirmation = () => {
             </div>
             <div className="order-conf__meta-item">
               <span className="order-conf__meta-label">Total</span>
-              <span className="order-conf__meta-val">€{Number(order.total).toFixed(2)}</span>
+              <span className="order-conf__meta-val">₾{Number(order.total).toFixed(2)}</span>
             </div>
             <div className="order-conf__meta-item">
               <span className="order-conf__meta-label">Status</span>
@@ -93,9 +93,8 @@ const OrderConfirmation = () => {
           <ul className="order-conf__items">
             {order.items.map((item, i) => (
               <li key={i} className="order-conf__item">
-                <span className="order-conf__item-name">{item.name}</span>
                 <span className="order-conf__item-qty">× {item.quantity}</span>
-                <span className="order-conf__item-price">€{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="order-conf__item-price">₾{(item.price * item.quantity).toFixed(2)}</span>
               </li>
             ))}
           </ul>

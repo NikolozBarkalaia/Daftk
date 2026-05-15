@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { SettingsProvider } from './context/SettingsContext';
 import App from './App';
 
 // Self-hosted fonts via @fontsource (no CDN dependency)
@@ -29,7 +30,9 @@ root.render(
       <BrowserRouter>
         <CartProvider>
           <NotificationProvider>
-            <App />
+            <SettingsProvider>
+              <App />
+            </SettingsProvider>
           </NotificationProvider>
         </CartProvider>
       </BrowserRouter>

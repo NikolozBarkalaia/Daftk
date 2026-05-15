@@ -288,7 +288,7 @@ const ProductsManager = () => {
 
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">Price (€) *</label>
+                <label className="block text-sm font-medium mb-2">Price (₾) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -301,7 +301,7 @@ const ProductsManager = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Old Price (€)</label>
+                <label className="block text-sm font-medium mb-2">Old Price (₾)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -428,11 +428,10 @@ const ProductsManager = () => {
                           key={text}
                           type="button"
                           onClick={() => setFormData(prev => ({ ...prev, badgeText: text }))}
-                          className={`text-xs px-2 py-1 rounded border transition-colors ${
-                            formData.badgeText === text
+                          className={`text-xs px-2 py-1 rounded border transition-colors ${formData.badgeText === text
                               ? 'bg-blue-100 border-blue-400 text-blue-800'
                               : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
+                            }`}
                         >
                           {text}
                         </button>
@@ -453,11 +452,10 @@ const ProductsManager = () => {
                             badgeBgColor: preset.bg,
                             badgeTextColor: preset.text,
                           }))}
-                          className={`p-3 rounded border-2 transition-all text-left ${
-                            formData.badgeBgColor === preset.bg && formData.badgeTextColor === preset.text
+                          className={`p-3 rounded border-2 transition-all text-left ${formData.badgeBgColor === preset.bg && formData.badgeTextColor === preset.text
                               ? 'border-blue-500 ring-2 ring-blue-200'
                               : 'border-gray-200 hover:border-gray-300'
-                          }`}
+                            }`}
                         >
                           <div className="text-xs font-medium text-gray-700 mb-2">{preset.name}</div>
                           <div
@@ -626,8 +624,8 @@ const ProductsManager = () => {
                   </div>
                   <p className="text-gray-dark mb-2">{product.description.substring(0, 100)}...</p>
                   <div className="grid grid-cols-4 gap-4 text-sm">
-                    <span><strong>Price:</strong> €{product.price}</span>
-                    {product.oldPrice && <span><strong>Old Price:</strong> €{product.oldPrice}</span>}
+                    <span><strong>Price:</strong> ₾{product.price}</span>
+                    {product.oldPrice && <span><strong>Old Price:</strong> ₾{product.oldPrice}</span>}
                     <span><strong>Stock:</strong> {product.stock}</span>
                     <span><strong>Category:</strong> {product.category}</span>
                   </div>

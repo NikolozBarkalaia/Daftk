@@ -10,7 +10,7 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5001";
    Web UI: http://localhost:8025
 ─────────────────────────────────────────────────────────── */
 let _resend = null;
-let _smtp   = null;
+let _smtp = null;
 
 const useResend = () => Boolean(process.env.RESEND_API_KEY);
 
@@ -104,7 +104,7 @@ const sendOrderConfirmationEmail = async (email, order) => {
           </td>
           <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px;color:#333;text-align:center;">×${item.quantity}</td>
           <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:14px;color:#333;text-align:right;">
-            €${(Number(item.price) * Number(item.quantity)).toFixed(2)}
+            ₾${(Number(item.price) * Number(item.quantity)).toFixed(2)}
           </td>
         </tr>`
       )
@@ -158,7 +158,7 @@ const sendOrderConfirmationEmail = async (email, order) => {
                       ${itemsHtml}
                       <tr>
                         <td colspan="2" style="padding:14px 0 0;font-size:14px;font-weight:600;color:#050505;">Total</td>
-                        <td style="padding:14px 0 0;font-size:16px;font-weight:600;color:#050505;text-align:right;">€${Number(order.total).toFixed(2)}</td>
+                        <td style="padding:14px 0 0;font-size:16px;font-weight:600;color:#050505;text-align:right;">₾${Number(order.total).toFixed(2)}</td>
                       </tr>
                     </table>
                   </td>

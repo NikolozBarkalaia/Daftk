@@ -90,7 +90,7 @@ const MiniCart = ({ open, onClose }) => {
                   <div className="mini-cart__meta">
                     {item.selectedSize && <span className="mini-cart__size">Size: {item.selectedSize}</span>}
                     <span className="mini-cart__qty">Qty: {item.quantity}</span>
-                    <span className="mini-cart__price">€{(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="mini-cart__price">₾{(item.price * item.quantity).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -113,7 +113,7 @@ const MiniCart = ({ open, onClose }) => {
           <div className="mini-cart__footer">
             <div className="mini-cart__subtotal">
               <span>Subtotal</span>
-              <span>€{cartSubtotal.toFixed(2)}</span>
+              <span>₾{cartSubtotal.toFixed(2)}</span>
             </div>
             <p className="mini-cart__shipping">Complimentary shipping</p>
 

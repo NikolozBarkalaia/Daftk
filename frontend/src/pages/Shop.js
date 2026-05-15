@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api, { getMediaUrl } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 
 /* ─── Product Card with quick-add ─────────────────────────── */
 const ProductCard = ({ product }) => {
@@ -40,9 +41,9 @@ const ProductCard = ({ product }) => {
       <div className="product-info">
         <Link to={`/product/${product._id}`} className="product-name">{product.name}</Link>
         <div className="flex gap-2 items-center">
-          <span className="product-price">€{product.price}</span>
+          <span className="product-price">₾{product.price}</span>
           {product.oldPrice && (
-            <span className="text-gray-dark line-through text-sm">€{product.oldPrice}</span>
+            <span className="text-gray-dark line-through text-sm">₾{product.oldPrice}</span>
           )}
         </div>
       </div>
@@ -51,6 +52,7 @@ const ProductCard = ({ product }) => {
 };
 
 const Shop = () => {
+  const { settings } = useSettings();
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -87,7 +89,7 @@ const Shop = () => {
 
   return (
     <div className="container">
-      <h1 className="page-title">Collection</h1>
+      <h1 className="page-title">{settings.shop_collection_title}</h1>
       {loading ? (
         <p className="text-center py-20">Loading Collection...</p>
       ) : (

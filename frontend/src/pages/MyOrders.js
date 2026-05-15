@@ -103,7 +103,7 @@ const OrderRow = ({ order }) => {
         <span className={`order-badge order-badge--${order.status}`}>
           {STATUS_LABEL[order.status] || order.status}
         </span>
-        <span className="orders-row__total">€{Number(order.total).toFixed(2)}</span>
+        <span className="orders-row__total">₾{Number(order.total).toFixed(2)}</span>
         <Link to={`/order-confirmation/${order.token || order.id}`} className="orders-row__cta">
           View <ChevronRight size={14} />
         </Link>

@@ -11,6 +11,7 @@ import AdminSliderManager from './pages/Admin/SliderManager';
 import AdminProductsManager from './pages/Admin/ProductsManager';
 import AdminOrdersManager from './pages/Admin/OrdersManager';
 import AdminContactMessages from './pages/Admin/ContactMessages';
+import AdminSettingsManager from './pages/Admin/SettingsManager';
 
 // Client Components & Pages (Placeholders since they were requested)
 import Layout from './components/Layout';
@@ -38,6 +39,7 @@ function App() {
           <Route path="products" element={<AdminProductsManager />} />
           <Route path="orders" element={<AdminOrdersManager />} />
           <Route path="messages" element={<AdminContactMessages />} />
+          <Route path="settings" element={<AdminSettingsManager />} />
         </Route>
       </Route>
 

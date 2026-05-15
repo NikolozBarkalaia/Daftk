@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MediaShowcaseSwiper from '../components/MediaShowcaseSwiper';
 import api, { getMediaUrl } from '../services/api';
+import { useSettings } from '../context/SettingsContext';
 
 const Home = () => {
+  const { settings } = useSettings();
   const [hero, setHero] = useState(null);
   const [sliderItems, setSliderItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,7 +106,7 @@ const Home = () => {
 
       {/* Slider Section */}
       <div className="container">
-        <h2 className="page-title">Featured Pieces</h2>
+        <h2 className="page-title">{settings.home_featured_title}</h2>
         {sliderItems?.length > 0 ? (
           <MediaShowcaseSwiper items={sliderItems} />
         ) : (
