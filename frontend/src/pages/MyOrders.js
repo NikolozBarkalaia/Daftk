@@ -20,7 +20,7 @@ const persistOrders = (orders) => {
     orders.forEach((o) => { if (o.token) cache[o.token] = o.status; });
     localStorage.setItem(STATUS_CACHE_KEY, JSON.stringify(cache));
     window.dispatchEvent(new Event('ordersUpdated'));
-  } catch {}
+  } catch { }
 };
 
 const STATUS_LABEL = {
@@ -117,11 +117,11 @@ const MyOrders = () => {
   const [localOrders, setLocalOrders] = useState([]);
   const [emailOrders, setEmailOrders] = useState([]);
   const [localLoading, setLocalLoading] = useState(true);
-  const [step, setStep]               = useState('idle'); // 'idle' | 'sent' | 'verified'
-  const [emailInput, setEmailInput]   = useState('');
-  const [codeInput, setCodeInput]     = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState('');
+  const [step, setStep] = useState('idle'); // 'idle' | 'sent' | 'verified'
+  const [emailInput, setEmailInput] = useState('');
+  const [codeInput, setCodeInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Load orders by fetching each stored token from the backend
   useEffect(() => {
@@ -144,7 +144,7 @@ const MyOrders = () => {
     ).then((results) => {
       if (cancelled) return;
       const validTokens = results.filter((r) => r.data !== null).map((r) => r.token);
-      const orders      = results.filter((r) => r.data !== null).map((r) => r.data);
+      const orders = results.filter((r) => r.data !== null).map((r) => r.data);
 
       // Prune stale tokens from localStorage
       if (validTokens.length !== tokens.length) {

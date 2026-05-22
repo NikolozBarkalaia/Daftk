@@ -15,7 +15,7 @@ const init = async () => {
   let conn;
   try {
     conn = await pool.getConnection();
-    
+
     // Test connection
     await conn.query('SELECT 1');
     console.log('✅ MySQL connected');

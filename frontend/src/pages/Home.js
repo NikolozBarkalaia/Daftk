@@ -98,7 +98,7 @@ const Home = () => {
           />
           <div className="hero-content" style={{ position: 'relative', zIndex: 2 }}>
             <h1 className='text-5xl font-bold text-white'>{hero.title}</h1>
-            <p className='text-yellow-500 text-2xl'>{hero.subtitle}</p>
+            <p className='text-yellow-400 text-2xl'>{hero.subtitle}</p>
             <Link to={hero.buttonLink} className="btn">{hero.buttonText}</Link>
           </div>
         </section>

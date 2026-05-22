@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Menu, X } from 'lucide-react';
 import logo from "../assets/logo.jpeg";
 import { useCart } from '../context/CartContext';
 import MiniCart from './MiniCart';
@@ -26,6 +26,7 @@ const getActiveOrderCount = () => {
 const Navbar = () => {
   const { cartCount } = useCart();
   const [miniOpen, setMiniOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeOrders, setActiveOrders] = useState(getActiveOrderCount);
   const hoverTimer = useRef(null);
 
@@ -59,11 +60,15 @@ const Navbar = () => {
         <Link to="/" className="nav-logo">
           <img src={logo} alt="Logo" className='h-10 ' />
         </Link>
+        
+        {/* Desktop Navigation */}
         <div className="nav-links">
           <Link to="/shop">Shop</Link>
           <Link to="/about">About</Link>
           <Link to="/contact">Contact</Link>
         </div>
+        
+        {/* Desktop Icons */}
         <div className="nav-icons">
           <Link to="/orders" className="nav-orders-link" title="My Orders" style={{ position: 'relative' }}>
             Orders
@@ -97,7 +102,65 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Burger Menu Button */}
+        <button
+          className="burger-menu-btn"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle mobile menu"
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? (
+            <X size={24} strokeWidth={2} />
+          ) : (
+            <Menu size={24} strokeWidth={2} />
+          )}
+        </button>
       </div>
+
+      {/* Mobile Menu */}
+      {mobileMenuOpen && (
+        <div className="mobile-menu">
+          <Link
+            to="/shop"
+            className="mobile-menu-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Shop
+          </Link>
+          <Link
+            to="/about"
+            className="mobile-menu-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            About
+          </Link>
+          <Link
+            to="/contact"
+            className="mobile-menu-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Contact
+          </Link>
+          <Link
+            to="/orders"
+            className="mobile-menu-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            My Orders
+            {activeOrders > 0 && (
+              <span className="mobile-menu-badge">{activeOrders > 99 ? '99+' : activeOrders}</span>
+            )}
+          </Link>
+          <Link
+            to="/cart"
+            className="mobile-menu-link"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Cart ({cartCount})
+          </Link>
+        </div>
+      )}
     </nav>
   );
 };

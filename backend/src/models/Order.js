@@ -32,7 +32,7 @@ const Order = {
     // Decrease stock for each item (non-blocking, don't fail order if stock update fails)
     const stockUpdates = items
       .filter(item => item._id && item.selectedSize)
-      .map(item => Product.decreaseStock(item._id, item.selectedSize, item.quantity || 1).catch(() => {}));
+      .map(item => Product.decreaseStock(item._id, item.selectedSize, item.quantity || 1).catch(() => { }));
     await Promise.all(stockUpdates);
 
     return this.findById(result.insertId);

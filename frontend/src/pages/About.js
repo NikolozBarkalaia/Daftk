@@ -9,9 +9,9 @@ const About = () => {
     <section className="w-full bg-white text-black px-6 md:px-16 lg:px-24 py-10">
 
       {/* Top Logos */}
-      <div className="flex items-center justify-center gap-10 mb-10 flex-wrap">
-        <img src={Logo1} alt="logo1" className="h-12 md:h-16 object-contain" />
-        <img src={Logo2} alt="logo2" className="h-12 md:h-16 object-contain" />
+      <div className="flex items-center justify-center mb-10 flex-wrap">
+        <img src={Logo1} alt="logo1" className="h-24 object-contain" />
+        <img src={Logo2} alt="logo2" className="h-24 object-contain" />
       </div>
 
       {/* Title */}

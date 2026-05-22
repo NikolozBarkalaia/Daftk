@@ -25,7 +25,7 @@ const registerUser = async (req, res) => {
       return res.status(400).json({ message: 'Please add all fields' });
     }
 
-// User.findOne is synchronous (node:sqlite DatabaseSync)
+    // User.findOne is synchronous (node:sqlite DatabaseSync)
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
@@ -34,7 +34,7 @@ const registerUser = async (req, res) => {
     const user = await User.create({ name, email, password });
 
     // Send verification email (non-blocking – don't fail registration if email fails)
-    sendVerificationEmail(user.email, generateVerifyToken(user.email)).catch(() => {});
+    sendVerificationEmail(user.email, generateVerifyToken(user.email)).catch(() => { });
 
     res.status(201).json({
       _id: user.id,

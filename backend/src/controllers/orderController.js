@@ -30,7 +30,7 @@ const createOrder = async (req, res) => {
       notes,
     });
 
-    sendOrderConfirmationEmail(shippingAddress.email, order).catch(() => {});
+    sendOrderConfirmationEmail(shippingAddress.email, order).catch(() => { });
 
     res.status(201).json(order);
   } catch (err) {
@@ -115,7 +115,7 @@ const requestOrderLookup = async (req, res) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   otpStore.set(email.toLowerCase(), { code, expiresAt: Date.now() + 10 * 60 * 1000 });
 
-  await sendOrderLookupEmail(email, code).catch(() => {});
+  await sendOrderLookupEmail(email, code).catch(() => { });
 
   res.json({ message: 'Verification code sent' });
 };
