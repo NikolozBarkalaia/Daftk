@@ -1,10 +1,13 @@
 const mysql = require('mysql2/promise');
 
+const dbName = process.env.DB_NAME || 'daftk';
+
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'daftk',
   password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'daftk',
+  database: dbName,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -12,6 +15,16 @@ const pool = mysql.createPool({
 });
 
 const init = async () => {
+  // Ensure the database exists before using the pool
+  const bootstrap = await mysql.createConnection({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER || 'daftk',
+    password: process.env.DB_PASS || '',
+  });
+  await bootstrap.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await bootstrap.end();
+
   let conn;
   try {
     conn = await pool.getConnection();
