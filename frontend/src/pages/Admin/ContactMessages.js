@@ -23,6 +23,7 @@ const ContactMessages = () => {
 
   useEffect(() => {
     fetchMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) return <div className="text-center py-10">Loading messages...</div>;

@@ -1,5 +1,4 @@
 import React from 'react';
-import DaftKImage from '../../../frontend/src/assets/aboutUsPageEng0.jpeg';
 import Logo1 from '../../../frontend/src/assets/page-2.png';
 import Logo2 from '../../../frontend/src/assets/page-3.png';
 import Image from '../../../frontend/src/assets/image.png';

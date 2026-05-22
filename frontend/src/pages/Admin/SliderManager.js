@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-import { Plus, Trash2, GripVertical, Edit2, Upload } from 'lucide-react';
+import { Plus, Trash2, Edit2, Upload } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
 import FileUploader from '../../components/Admin/FileUploader';
 
@@ -22,6 +22,7 @@ const SliderManager = () => {
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchData = async () => {

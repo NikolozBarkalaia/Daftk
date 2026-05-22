@@ -22,6 +22,7 @@ const HeroManager = () => {
 
   useEffect(() => {
     fetchHeroAndMedia();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchHeroAndMedia = async () => {

@@ -43,7 +43,7 @@ export default function MediaShowcaseSwiper({ items }) {
     const nextRef   = useRef(null)
     const swiperRef = useRef(null)
     const { activeItem, isVisible, openModal, closeModal } = useModal()
-    const [swiperReady, setSwiperReady] = useState(false)
+    const [, setSwiperReady] = useState(false)
 
     const count = items?.length ?? 0
 

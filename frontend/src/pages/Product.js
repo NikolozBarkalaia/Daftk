@@ -7,10 +7,10 @@ import { useNotification } from '../context/NotificationContext';
 
 const Product = () => {
   const { id } = useParams();
-  const { addToCart, removeFromCart, updateQuantity, isInCart, cartItems } = useCart();
+  const { addToCart, removeFromCart, updateQuantity, cartItems } = useCart();
   const { showSuccess } = useNotification();
   const [product, setProduct] = useState(null);
-  const [relatedProducts, setRelatedProducts] = useState([]);
+  const [, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -19,6 +19,7 @@ const Product = () => {
 
   useEffect(() => {
     fetchProductAndRelated();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchProductAndRelated = async () => {
