@@ -66,6 +66,26 @@ const Order = {
     return rows.map(format);
   },
 
+  /**
+   * Finds orders whose shippingAddress.phone matches the last 9 digits
+   * of the provided normalized phone number.
+   * This handles phones stored with/without country code or formatting.
+   */
+  async findByPhone(phone) {
+    const digits = String(phone).replace(/\D/g, '');
+    // Use last 9 digits (the local Georgian subscriber number) for flexible matching
+    const local = digits.length >= 9 ? digits.slice(-9) : digits;
+    const [rows] = await pool.query(
+      `SELECT * FROM orders
+       WHERE REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(
+         IFNULL(JSON_UNQUOTE(JSON_EXTRACT(shippingAddress, '$.phone')), ''),
+         '+', ''), ' ', ''), '-', ''), '(', ''), ')', '') LIKE ?
+       ORDER BY createdAt DESC`,
+      [`%${local}`]
+    );
+    return rows.map(format);
+  },
+
   async updateStatus(id, status) {
     await pool.query('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
     return this.findById(id);

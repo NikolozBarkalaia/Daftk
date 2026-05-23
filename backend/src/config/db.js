@@ -156,6 +156,18 @@ const init = async () => {
       ('shipping_fee', '5.00')
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS sms_otps (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        phone VARCHAR(20) NOT NULL,
+        codeHash VARCHAR(64) NOT NULL,
+        attempts TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        expiresAt DATETIME NOT NULL,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_phone_expires (phone, expiresAt)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     console.log('✅ MySQL connected and tables initialized');
   } catch (err) {
     console.error('❌ Database connection error:', err.message);

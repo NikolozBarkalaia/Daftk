@@ -50,9 +50,9 @@ export const getOrderById = (id) => api.get(`/orders/${id}`);
 export const getAllOrders = () => api.get('/orders');
 export const updateOrderStatus = (id, status) => api.put(`/orders/${id}/status`, { status });
 
-// ─── Guest order lookup (OTP) ────────────────────────────────
-export const requestOrderLookup = (email) => api.post('/orders/request-lookup', { email });
-export const verifyOrderLookup = (email, code) => api.post('/orders/verify-lookup', { email, code });
+// ─── Guest order lookup (SMS OTP) ───────────────────────────
+export const requestOrderLookup = (phone) => api.post('/orders/request-lookup', { phone });
+export const verifyOrderLookup = (phone, code) => api.post('/orders/verify-lookup', { phone, code });
 
 // ─── Site Settings ──────────────────────────────────────────
 export const getSettings = () => api.get('/settings');

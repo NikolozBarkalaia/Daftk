@@ -29,6 +29,13 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
 
+// Ubill SMS delivery status callback
+app.post('/callback', (req, res) => {
+  // Ubill posts delivery reports here. Log for monitoring; extend as needed.
+  console.log('[Ubill Callback]', JSON.stringify(req.body));
+  res.sendStatus(200);
+});
+
 // ტესტირება
 // app.use('/api', require('./routes/testRoutes'));
 app.use('/api', require('./routes/verifyRoutes'));

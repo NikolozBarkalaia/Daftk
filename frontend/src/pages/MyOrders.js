@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, ChevronRight, Mail, KeyRound, RotateCcw, Check } from 'lucide-react';
+import { Package, ChevronRight, Smartphone, KeyRound, RotateCcw, Check } from 'lucide-react';
 import { requestOrderLookup, verifyOrderLookup, getOrderByToken, getMediaUrl } from '../services/api';
 
 const ORDERS_KEY = 'daftk_orders';
@@ -40,7 +40,7 @@ const mergeOrders = (local, fromEmail) => {
 };
 
 /* ─── Step indicator ─────────────────────────────────────── */
-const STEPS = ['Email', 'Code', 'Done'];
+const STEPS = ['Phone', 'Code', 'Done'];
 
 const StepIndicator = ({ step }) => {
   const activeIdx = step === 'idle' ? 0 : step === 'sent' ? 1 : 2;
@@ -115,10 +115,10 @@ const OrderRow = ({ order }) => {
 /* ─── My Orders Page ─────────────────────────────────────── */
 const MyOrders = () => {
   const [localOrders, setLocalOrders] = useState([]);
-  const [emailOrders, setEmailOrders] = useState([]);
+  const [phoneOrders, setPhoneOrders] = useState([]);
   const [localLoading, setLocalLoading] = useState(true);
   const [step, setStep] = useState('idle'); // 'idle' | 'sent' | 'verified'
-  const [emailInput, setEmailInput] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
   const [codeInput, setCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -159,16 +159,17 @@ const MyOrders = () => {
     return () => { cancelled = true; };
   }, []);
 
-  const allOrders = mergeOrders(localOrders, emailOrders);
+  const allOrders = mergeOrders(localOrders, phoneOrders);
 
-  /* ── Request OTP ── */
+  /* ── Request OTP via SMS ── */
   const handleRequestCode = async (e) => {
     e.preventDefault();
-    if (!emailInput.trim()) return;
+    const trimmed = phoneInput.trim();
+    if (trimmed.replace(/\D/g, '').length < 9) return;
     setError('');
     setLoading(true);
     try {
-      await requestOrderLookup(emailInput.trim());
+      await requestOrderLookup('+995' + trimmed);
       setStep('sent');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send code. Please try again.');
@@ -177,15 +178,15 @@ const MyOrders = () => {
     }
   };
 
-  /* ── Verify OTP ── */
+  /* ── Verify SMS OTP ── */
   const handleVerify = async (e) => {
     e.preventDefault();
     if (codeInput.length < 6) return;
     setError('');
     setLoading(true);
     try {
-      const { data } = await verifyOrderLookup(emailInput.trim(), codeInput.trim());
-      setEmailOrders(data);
+      const { data } = await verifyOrderLookup('+995' + phoneInput.trim(), codeInput.trim());
+      setPhoneOrders(data);
       persistOrders(data); // save tokens + statuses to localStorage
       setStep('verified');
     } catch (err) {
@@ -197,10 +198,10 @@ const MyOrders = () => {
 
   const resetLookup = () => {
     setStep('idle');
-    setEmailInput('');
+    setPhoneInput('');
     setCodeInput('');
     setError('');
-    setEmailOrders([]);
+    setPhoneOrders([]);
   };
 
   const hasOrders = allOrders.length > 0;
@@ -237,7 +238,7 @@ const MyOrders = () => {
           {!hasOrders && step === 'idle' && (
             <div className="ol-no-orders-hint">
               <Package size={32} strokeWidth={0.75} />
-              <span>No orders on this device — look up by email below</span>
+              <span>No orders on this device — look up by phone below</span>
             </div>
           )}
           <StepIndicator step={step} />
@@ -250,34 +251,38 @@ const MyOrders = () => {
               </div>
               <div className="ol-verified__info">
                 <p className="ol-verified__label">Orders loaded for</p>
-                <p className="ol-verified__email">{emailInput}</p>
-                {emailOrders.length === 0 && (
-                  <p className="ol-verified__empty">No orders found with this email address.</p>
+                <p className="ol-verified__email">+995 {phoneInput}</p>
+                {phoneOrders.length === 0 && (
+                  <p className="ol-verified__empty">No orders found with this phone number.</p>
                 )}
               </div>
               <button className="ol-reset-btn" onClick={resetLookup}>
-                <RotateCcw size={12} /> Search another email
+                <RotateCcw size={12} /> Search another number
               </button>
             </div>
           )}
 
-          {/* ─ Idle: enter email ─ */}
+          {/* ─ Idle: enter phone ─ */}
           {step === 'idle' && (
             <>
-              <h2 className="orders-lookup__title">Find orders by email</h2>
+              <h2 className="orders-lookup__title">Find orders by phone</h2>
               <p className="orders-lookup__sub">
-                Enter the email you used at checkout. We'll send a one-time code to verify it's you.
+                Enter the phone number you used at checkout. We'll send a one-time SMS code to verify it's you.
               </p>
               <form className="ol-form" onSubmit={handleRequestCode}>
-                <input
-                  type="email"
-                  className="input-field ol-form__input"
-                  placeholder="your@email.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  required
-                  autoFocus
-                />
+                <div className="phone-prefix-wrap ol-form__phone-wrap">
+                  <span className="phone-prefix-label" aria-hidden="true">+995</span>
+                  <input
+                    type="tel"
+                    className="input-field phone-prefix-input"
+                    placeholder="5XX XXX XXX"
+                    value={phoneInput}
+                    onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                    required
+                    autoFocus
+                    maxLength={9}
+                  />
+                </div>
                 <button type="submit" className="btn ol-form__btn" disabled={loading}>
                   {loading ? 'Sending…' : 'Send Code'}
                 </button>
@@ -286,16 +291,16 @@ const MyOrders = () => {
             </>
           )}
 
-          {/* ─ Sent: enter code ─ */}
+          {/* ─ Sent: enter SMS code ─ */}
           {step === 'sent' && (
             <>
               <div className="ol-sent-notice">
-                <Mail size={13} strokeWidth={1.5} />
-                Code sent to <strong>{emailInput}</strong>
+                <Smartphone size={13} strokeWidth={1.5} />
+                SMS code sent to <strong>+995 {phoneInput}</strong>
               </div>
               <h2 className="orders-lookup__title">Enter your code</h2>
               <p className="orders-lookup__sub">
-                Check your inbox for a 6-digit code. It expires in 10 minutes.
+                Check your SMS for a 6-digit code. It expires in 10 minutes.
               </p>
               <form className="ol-form ol-form--code" onSubmit={handleVerify}>
                 <input
@@ -319,7 +324,7 @@ const MyOrders = () => {
               </form>
               {error && <p className="ol-error">{error}</p>}
               <button className="ol-change-email-btn" onClick={resetLookup}>
-                Use a different email
+                Use a different number
               </button>
             </>
           )}

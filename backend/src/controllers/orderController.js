@@ -1,8 +1,7 @@
 const Order = require('../models/Order');
-const { sendOrderConfirmationEmail, sendOrderLookupEmail } = require('../services/emailService');
-
-// In-memory OTP store { email -> { code, expiresAt } }
-const otpStore = new Map();
+const SmsVerification = require('../models/SmsVerification');
+const { sendOrderConfirmationEmail } = require('../services/emailService');
+const { sendOtpSms, normalizePhone } = require('../services/smsService');
 
 // @desc    Create new order (guest – no auth required)
 // @route   POST /api/orders
@@ -16,8 +15,8 @@ const createOrder = async (req, res) => {
   if (!shippingAddress || !shippingAddress.address || !shippingAddress.city) {
     return res.status(400).json({ message: 'Shipping address is required' });
   }
-  if (!shippingAddress.email) {
-    return res.status(400).json({ message: 'Email address is required' });
+  if (!shippingAddress.phone || String(shippingAddress.phone).replace(/\D/g, '').length < 9) {
+    return res.status(400).json({ message: 'Phone number is required' });
   }
 
   try {
@@ -30,7 +29,9 @@ const createOrder = async (req, res) => {
       notes,
     });
 
-    sendOrderConfirmationEmail(shippingAddress.email, order).catch(() => { });
+    if (shippingAddress.email) {
+      sendOrderConfirmationEmail(shippingAddress.email, order).catch(() => { });
+    }
 
     res.status(201).json(order);
   } catch (err) {
@@ -103,40 +104,81 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// @desc    Send OTP to email for order lookup
+// @desc    Send OTP via SMS for order lookup by phone
 // @route   POST /api/orders/request-lookup
 // @access  Public
 const requestOrderLookup = async (req, res) => {
-  const { email } = req.body;
-  if (!email || !email.includes('@')) {
-    return res.status(400).json({ message: 'Valid email is required' });
+  const { phone } = req.body;
+  if (!phone || String(phone).replace(/\D/g, '').length < 9) {
+    return res.status(400).json({ message: 'Valid phone number is required' });
   }
 
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore.set(email.toLowerCase(), { code, expiresAt: Date.now() + 10 * 60 * 1000 });
+  const normalized = normalizePhone(phone);
 
-  await sendOrderLookupEmail(email, code).catch(() => { });
+  try {
+    // Check orders exist before sending OTP — avoids sending SMS to unknown numbers
+    const existingOrders = await Order.findByPhone(normalized);
+    if (!existingOrders.length) {
+      return res.status(404).json({ message: 'No orders found for this phone number.' });
+    }
 
-  res.json({ message: 'Verification code sent' });
+    const withinLimit = await SmsVerification.checkRateLimit(normalized);
+    if (!withinLimit) {
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+
+    const code = await SmsVerification.create(normalized);
+    console.log('[OTP] Code created for', normalized, '— sending SMS…');
+
+    try {
+      await sendOtpSms(normalized, code);
+    } catch (smsErr) {
+      console.error('[OTP] SMS send failed:', smsErr.message);
+      return res.status(502).json({ message: `SMS delivery failed: ${smsErr.message}` });
+    }
+
+    res.json({ message: 'Verification code sent' });
+  } catch (err) {
+    console.error('[requestOrderLookup]', err);
+    res.status(500).json({ message: 'Failed to send verification code' });
+  }
 };
 
-// @desc    Verify OTP and return orders for that email
+// @desc    Verify SMS OTP and return orders for that phone
 // @route   POST /api/orders/verify-lookup
 // @access  Public
 const verifyOrderLookup = async (req, res) => {
-  const { email, code } = req.body;
-  if (!email || !code) {
-    return res.status(400).json({ message: 'Email and code are required' });
+  const { phone, code } = req.body;
+  if (!phone || !code) {
+    return res.status(400).json({ message: 'Phone number and code are required' });
   }
 
-  const stored = otpStore.get(email.toLowerCase());
-  if (!stored || stored.code !== String(code) || Date.now() > stored.expiresAt) {
-    return res.status(401).json({ message: 'Invalid or expired code' });
-  }
+  const normalized = normalizePhone(phone);
 
-  otpStore.delete(email.toLowerCase());
-  const orders = await Order.findByEmail(email);
-  res.json(orders);
+  try {
+    const result = await SmsVerification.verify(normalized, String(code).trim());
+
+    if (!result.valid) {
+      if (result.reason === 'max_attempts') {
+        return res.status(401).json({
+          message: 'Too many failed attempts. Please request a new code.',
+        });
+      }
+      const attemptsMsg =
+        result.attemptsLeft != null
+          ? ` ${result.attemptsLeft} attempt${result.attemptsLeft === 1 ? '' : 's'} remaining.`
+          : '';
+      return res.status(401).json({
+        message: `Invalid or expired code.${attemptsMsg}`,
+      });
+    }
+
+    const orders = await Order.findByPhone(normalized);
+    res.json(orders);
+  } catch (err) {
+    console.error('[verifyOrderLookup]', err);
+    res.status(500).json({ message: 'Verification failed' });
+  }
 };
 
 module.exports = {

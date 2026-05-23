@@ -25,6 +25,35 @@ const saveOrderToken = (token) => {
   } catch {}
 };
 
+/* ─── Phone Field Component ─────────────────────────────── */
+const PhoneField = ({ value, onChange, required }) => {
+  const subscriberDigits = String(value || '').replace(/^\+?995/, '').replace(/\D/g, '');
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 9);
+    onChange({ target: { name: 'phone', value: '+995' + digits } });
+  };
+  return (
+    <div className="checkout-field">
+      <label className="checkout-field__label" htmlFor="phone">
+        Phone{required && <span className="checkout-field__req">*</span>}
+      </label>
+      <div className="phone-prefix-wrap">
+        <span className="phone-prefix-label" aria-hidden="true">+995</span>
+        <input
+          id="phone" name="phone" type="tel"
+          value={subscriberDigits}
+          onChange={handleChange}
+          required={required}
+          placeholder="5XX XXX XXX"
+          className="input-field checkout-field__input phone-prefix-input"
+          autoComplete="tel"
+          maxLength={9}
+        />
+      </div>
+    </div>
+  );
+};
+
 /* ─── Field Component ─────────────────────────────────────── */
 const Field = ({ label, name, value, onChange, type = 'text', required, placeholder }) => (
   <div className="checkout-field">
@@ -144,7 +173,7 @@ const Checkout = () => {
               <Field label="Last Name" name="lastName" value={form.lastName} onChange={handleChange} required placeholder="Dupont" />
             </div>
             <Field label="Email" name="email" type="email" value={form.email} onChange={handleChange} required placeholder="you@example.com" />
-            <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="+33 6 00 00 00 00" />
+            <PhoneField value={form.phone} onChange={handleChange} required />
             <Field label="Street Address" name="address" value={form.address} onChange={handleChange} required placeholder="12 Rue de la Paix" />
             <div className="checkout-row">
               <Field label="City" name="city" value={form.city} onChange={handleChange} required placeholder="Paris" />
