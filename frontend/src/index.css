@@ -2452,6 +2452,15 @@ ul {
   color: #c0392b;
 }
 
+.ol-cooldown {
+  margin-top: 12px;
+  font-size: 0.84rem;
+  color: #b8620a;
+  background: #fff8f0;
+  border: 1px solid #f5d9b0;
+  padding: 8px 12px;
+}
+
 .ol-change-email-btn {
   margin-top: 16px;
   background: none;

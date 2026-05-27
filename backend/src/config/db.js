@@ -168,6 +168,14 @@ const init = async () => {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
 
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS sms_cooldowns (
+        phone VARCHAR(20) NOT NULL PRIMARY KEY,
+        cooldownUntil DATETIME NOT NULL,
+        level TINYINT UNSIGNED NOT NULL DEFAULT 1
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
     console.log('✅ MySQL connected and tables initialized');
   } catch (err) {
     console.error('❌ Database connection error:', err.message);

@@ -122,6 +122,14 @@ const MyOrders = () => {
   const [codeInput, setCodeInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0); // seconds remaining
+
+  // Countdown timer for resend cooldown
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   // Load orders by fetching each stored token from the backend
   useEffect(() => {
@@ -170,9 +178,16 @@ const MyOrders = () => {
     setLoading(true);
     try {
       await requestOrderLookup('+995' + trimmed);
+      setResendCooldown(0);
       setStep('sent');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send code. Please try again.');
+      const seconds = err.response?.data?.secondsLeft;
+      if (seconds) {
+        setResendCooldown(seconds);
+        setError('');
+      } else {
+        setError(err.response?.data?.message || 'Failed to send code. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -187,7 +202,8 @@ const MyOrders = () => {
     try {
       const { data } = await verifyOrderLookup('+995' + phoneInput.trim(), codeInput.trim());
       setPhoneOrders(data);
-      persistOrders(data); // save tokens + statuses to localStorage
+      persistOrders(data);
+      setResendCooldown(0);
       setStep('verified');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid or expired code.');
@@ -202,6 +218,7 @@ const MyOrders = () => {
     setCodeInput('');
     setError('');
     setPhoneOrders([]);
+    setResendCooldown(0);
   };
 
   const hasOrders = allOrders.length > 0;
@@ -323,6 +340,11 @@ const MyOrders = () => {
                 </button>
               </form>
               {error && <p className="ol-error">{error}</p>}
+              {resendCooldown > 0 && (
+                <p className="ol-cooldown">
+                  Too many wrong attempts — resend available in <strong>{resendCooldown}s</strong>
+                </p>
+              )}
               <button className="ol-change-email-btn" onClick={resetLookup}>
                 Use a different number
               </button>

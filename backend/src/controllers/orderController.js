@@ -127,6 +127,15 @@ const requestOrderLookup = async (req, res) => {
       return res.status(429).json({ message: 'Too many requests. Please try again later.' });
     }
 
+    // Check per-phone resend cooldown from previous wrong attempts
+    const cooldown = await SmsVerification.checkResendCooldown(normalized);
+    if (cooldown.blocked) {
+      return res.status(429).json({
+        message: `Too many wrong attempts. Please wait ${cooldown.secondsLeft} seconds before requesting a new code.`,
+        secondsLeft: cooldown.secondsLeft,
+      });
+    }
+
     const code = await SmsVerification.create(normalized);
     console.log('[OTP] Code created for', normalized, '— sending SMS…');
 

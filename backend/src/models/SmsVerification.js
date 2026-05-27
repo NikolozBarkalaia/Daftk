@@ -7,6 +7,9 @@ const OTP_TTL_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
 const RATE_LIMIT_HOURS = 1;
 const RATE_LIMIT_MAX = 5;
+// Wrong-attempt cooldown levels before a new SMS can be requested
+const COOLDOWN_TRIGGER_ATTEMPTS = 2; // wrong entries before cooldown kicks in
+const COOLDOWN_MINUTES = [1, 3];     // level 1 = 1 min, level 2+ = 3 min
 
 /** SHA-256 hex hash of the plaintext OTP code */
 function hashCode(code) {
@@ -90,18 +93,62 @@ const SmsVerification = {
         'UPDATE sms_otps SET attempts = attempts + 1 WHERE id = ?',
         [record.id]
       );
-      const attemptsLeft = MAX_ATTEMPTS - record.attempts - 1;
+      const newAttempts = record.attempts + 1;
+      const attemptsLeft = MAX_ATTEMPTS - newAttempts;
+
+      // Trigger resend cooldown after enough wrong attempts
+      if (newAttempts >= COOLDOWN_TRIGGER_ATTEMPTS) {
+        await SmsVerification.setCooldown(phone);
+      }
+
       return { valid: false, reason: 'invalid_code', attemptsLeft };
     }
 
-    // Valid — consume (single-use)
+    // Valid — consume (single-use) and clear any cooldown
     await pool.query('DELETE FROM sms_otps WHERE id = ?', [record.id]);
+    await pool.query('DELETE FROM sms_cooldowns WHERE phone = ?', [phone]);
     return { valid: true };
   },
 
   /** Purge all expired OTPs. */
   async cleanup() {
     await pool.query('DELETE FROM sms_otps WHERE expiresAt < NOW()');
+  },
+
+  /**
+   * Set (or escalate) a resend cooldown for the phone.
+   * Level 1 = 1 minute, level 2+ = 3 minutes.
+   */
+  async setCooldown(phone) {
+    const [rows] = await pool.query(
+      'SELECT level FROM sms_cooldowns WHERE phone = ?',
+      [phone]
+    );
+    const prevLevel = rows.length ? rows[0].level : 0;
+    const newLevel = Math.min(prevLevel + 1, 2);
+    const minutes = COOLDOWN_MINUTES[newLevel - 1];
+
+    await pool.query(
+      `INSERT INTO sms_cooldowns (phone, cooldownUntil, level)
+       VALUES (?, DATE_ADD(NOW(), INTERVAL ? MINUTE), ?)
+       ON DUPLICATE KEY UPDATE
+         cooldownUntil = DATE_ADD(NOW(), INTERVAL ? MINUTE),
+         level = ?`,
+      [phone, minutes, newLevel, minutes, newLevel]
+    );
+  },
+
+  /**
+   * Returns { blocked: false } or { blocked: true, secondsLeft: N }
+   */
+  async checkResendCooldown(phone) {
+    const [rows] = await pool.query(
+      `SELECT GREATEST(0, TIMESTAMPDIFF(SECOND, NOW(), cooldownUntil)) AS secondsLeft
+       FROM sms_cooldowns WHERE phone = ? AND cooldownUntil > NOW()`,
+      [phone]
+    );
+    if (!rows.length) return { blocked: false };
+    return { blocked: true, secondsLeft: rows[0].secondsLeft };
   },
 };
 
