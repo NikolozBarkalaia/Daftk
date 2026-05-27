@@ -185,6 +185,8 @@ const MyOrders = () => {
       if (seconds) {
         setResendCooldown(seconds);
         setError('');
+        // If already on sent step, stay there so user can still enter code
+        // If on idle, the button will show the countdown
       } else {
         setError(err.response?.data?.message || 'Failed to send code. Please try again.');
       }
@@ -300,11 +302,16 @@ const MyOrders = () => {
                     maxLength={9}
                   />
                 </div>
-                <button type="submit" className="btn ol-form__btn" disabled={loading}>
-                  {loading ? 'Sending…' : 'Send Code'}
+                <button type="submit" className="btn ol-form__btn" disabled={loading || resendCooldown > 0}>
+                  {loading ? 'Sending…' : resendCooldown > 0 ? `Wait ${resendCooldown}s` : 'Send Code'}
                 </button>
               </form>
               {error && <p className="ol-error">{error}</p>}
+              {resendCooldown > 0 && (
+                <p className="ol-cooldown">
+                  Too many wrong attempts — resend available in <strong>{resendCooldown}s</strong>
+                </p>
+              )}
             </>
           )}
 
