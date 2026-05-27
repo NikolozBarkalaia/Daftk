@@ -124,15 +124,15 @@ const requestOrderLookup = async (req, res) => {
 
     const withinLimit = await SmsVerification.checkRateLimit(normalized);
     if (!withinLimit) {
-      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+      return res.status(429).json({ message: 'Too many SMS requests for this number. Please try again later.' });
     }
 
-    // Check per-phone resend cooldown from previous wrong attempts
-    const cooldown = await SmsVerification.checkResendCooldown(normalized);
-    if (cooldown.blocked) {
+    // 60s throttle: prevent rapid resend / refresh spam
+    const throttle = await SmsVerification.checkResendThrottle(normalized);
+    if (throttle.blocked) {
       return res.status(429).json({
-        message: `Too many wrong attempts. Please wait ${cooldown.secondsLeft} seconds before requesting a new code.`,
-        secondsLeft: cooldown.secondsLeft,
+        message: `A code was already sent. Please wait ${throttle.secondsLeft} seconds before requesting a new one.`,
+        secondsLeft: throttle.secondsLeft,
       });
     }
 
@@ -170,15 +170,14 @@ const verifyOrderLookup = async (req, res) => {
     if (!result.valid) {
       if (result.reason === 'max_attempts') {
         return res.status(401).json({
+          reason: 'max_attempts',
           message: 'Too many failed attempts. Please request a new code.',
         });
       }
-      const attemptsMsg =
-        result.attemptsLeft != null
-          ? ` ${result.attemptsLeft} attempt${result.attemptsLeft === 1 ? '' : 's'} remaining.`
-          : '';
       return res.status(401).json({
-        message: `Invalid or expired code.${attemptsMsg}`,
+        reason: result.reason || 'invalid_code',
+        attemptsLeft: result.attemptsLeft ?? null,
+        message: 'Incorrect code.',
       });
     }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Package, ChevronRight, Smartphone, KeyRound, RotateCcw, Check } from 'lucide-react';
 import { requestOrderLookup, verifyOrderLookup, getOrderByToken, getMediaUrl } from '../services/api';
@@ -58,6 +58,71 @@ const StepIndicator = ({ step }) => {
             <div className={`ol-step__line${i < activeIdx ? ' ol-step__line--done' : ''}`} />
           )}
         </React.Fragment>
+      ))}
+    </div>
+  );
+};
+
+/* ─── 6-box OTP input ────────────────────────────────────── */
+const OtpBoxes = ({ value = '', onChange, disabled }) => {
+  const refs = useRef([]);
+
+  const handleChange = (i, e) => {
+    const char = e.target.value.replace(/\D/g, '').slice(-1);
+    const arr = Array.from({ length: 6 }, (_, j) => value[j] || '');
+    arr[i] = char;
+    onChange(arr.join(''));
+    if (char && i < 5) refs.current[i + 1]?.focus();
+  };
+
+  const handleKeyDown = (i, e) => {
+    if (e.key === 'Backspace') {
+      if (value[i]) {
+        // clear current box
+        const arr = Array.from({ length: 6 }, (_, j) => value[j] || '');
+        arr[i] = '';
+        onChange(arr.join(''));
+      } else if (i > 0) {
+        // move to previous and clear it
+        const arr = Array.from({ length: 6 }, (_, j) => value[j] || '');
+        arr[i - 1] = '';
+        onChange(arr.join(''));
+        refs.current[i - 1]?.focus();
+      }
+      e.preventDefault();
+    } else if (e.key === 'ArrowLeft' && i > 0) {
+      refs.current[i - 1]?.focus();
+    } else if (e.key === 'ArrowRight' && i < 5) {
+      refs.current[i + 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const digits = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    onChange(digits);
+    const focusIdx = Math.min(digits.length, 5);
+    setTimeout(() => refs.current[focusIdx]?.focus(), 0);
+  };
+
+  return (
+    <div className="otp-boxes">
+      {[0, 1, 2, 3, 4, 5].map((i) => (
+        <input
+          key={i}
+          ref={(el) => (refs.current[i] = el)}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          className={`otp-box${value[i] ? ' otp-box--filled' : ''}`}
+          value={value[i] || ''}
+          onChange={(e) => handleChange(i, e)}
+          onKeyDown={(e) => handleKeyDown(i, e)}
+          onPaste={handlePaste}
+          disabled={disabled}
+          autoFocus={i === 0}
+          autoComplete="one-time-code"
+        />
       ))}
     </div>
   );
@@ -123,6 +188,8 @@ const MyOrders = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendCooldown, setResendCooldown] = useState(0); // seconds remaining
+  const [attemptsLeft, setAttemptsLeft] = useState(null);
+  const [maxAttemptsReached, setMaxAttemptsReached] = useState(false);
 
   // Countdown timer for resend cooldown
   useEffect(() => {
@@ -171,10 +238,13 @@ const MyOrders = () => {
 
   /* ── Request OTP via SMS ── */
   const handleRequestCode = async (e) => {
-    e.preventDefault();
+    e?.preventDefault?.();
     const trimmed = phoneInput.trim();
     if (trimmed.replace(/\D/g, '').length < 9) return;
     setError('');
+    setCodeInput('');
+    setAttemptsLeft(null);
+    setMaxAttemptsReached(false);
     setLoading(true);
     try {
       await requestOrderLookup('+995' + trimmed);
@@ -184,9 +254,7 @@ const MyOrders = () => {
       const seconds = err.response?.data?.secondsLeft;
       if (seconds) {
         setResendCooldown(seconds);
-        setError('');
-        // If already on sent step, stay there so user can still enter code
-        // If on idle, the button will show the countdown
+        setStep('sent'); // stay on code step so user sees the countdown
       } else {
         setError(err.response?.data?.message || 'Failed to send code. Please try again.');
       }
@@ -208,7 +276,22 @@ const MyOrders = () => {
       setResendCooldown(0);
       setStep('verified');
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid or expired code.');
+      const reason = err.response?.data?.reason;
+      const left = err.response?.data?.attemptsLeft;
+      if (reason === 'max_attempts') {
+        setMaxAttemptsReached(true);
+        setCodeInput('');
+        setError('Too many failed attempts. Please request a new code.');
+      } else if (reason === 'invalid_code') {
+        setAttemptsLeft(left);
+        setError(
+          left != null && left > 0
+            ? `Incorrect code. ${left} attempt${left !== 1 ? 's' : ''} remaining.`
+            : 'Incorrect code.'
+        );
+      } else {
+        setError(err.response?.data?.message || 'Invalid or expired code.');
+      }
     } finally {
       setLoading(false);
     }
@@ -221,6 +304,8 @@ const MyOrders = () => {
     setError('');
     setPhoneOrders([]);
     setResendCooldown(0);
+    setAttemptsLeft(null);
+    setMaxAttemptsReached(false);
   };
 
   const hasOrders = allOrders.length > 0;
@@ -320,41 +405,57 @@ const MyOrders = () => {
             <>
               <div className="ol-sent-notice">
                 <Smartphone size={13} strokeWidth={1.5} />
-                SMS code sent to <strong>+995 {phoneInput}</strong>
+                Code sent to <strong>+995&nbsp;{phoneInput}</strong>
               </div>
+
               <h2 className="orders-lookup__title">Enter your code</h2>
               <p className="orders-lookup__sub">
                 Check your SMS for a 6-digit code. It expires in 10 minutes.
               </p>
-              <form className="ol-form ol-form--code" onSubmit={handleVerify}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  className="input-field ol-form__code-input"
-                  placeholder="000000"
+
+              <form onSubmit={handleVerify}>
+                <OtpBoxes
                   value={codeInput}
-                  onChange={(e) => setCodeInput(e.target.value.replace(/\D/g, ''))}
-                  required
-                  autoFocus
+                  onChange={(v) => { setCodeInput(v); if (!maxAttemptsReached) setError(''); }}
+                  disabled={maxAttemptsReached || loading}
                 />
-                <button
-                  type="submit"
-                  className="btn ol-form__btn"
-                  disabled={loading || codeInput.length < 6}
-                >
-                  {loading ? 'Verifying…' : <><KeyRound size={14} /> Verify</>}
-                </button>
+
+                {attemptsLeft !== null && attemptsLeft <= 3 && !maxAttemptsReached && (
+                  <p className="ol-attempts">
+                    {attemptsLeft} attempt{attemptsLeft !== 1 ? 's' : ''} remaining
+                  </p>
+                )}
+
+                {error && <p className="ol-error">{error}</p>}
+
+                {!maxAttemptsReached && (
+                  <button
+                    type="submit"
+                    className="btn ol-verify-btn"
+                    disabled={loading || codeInput.replace(/\D/g, '').length < 6}
+                  >
+                    {loading ? 'Verifying…' : <><KeyRound size={14} /> Verify</>}
+                  </button>
+                )}
+
+                <div className="ol-actions">
+                  <button
+                    type="button"
+                    className="ol-resend-btn"
+                    onClick={handleRequestCode}
+                    disabled={loading || resendCooldown > 0}
+                  >
+                    <RotateCcw size={12} />
+                    {resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : maxAttemptsReached ? 'Request new code' : 'Resend code'
+                    }
+                  </button>
+                  <button type="button" className="ol-change-email-btn" onClick={resetLookup}>
+                    ← Change number
+                  </button>
+                </div>
               </form>
-              {error && <p className="ol-error">{error}</p>}
-              {resendCooldown > 0 && (
-                <p className="ol-cooldown">
-                  Too many wrong attempts — resend available in <strong>{resendCooldown}s</strong>
-                </p>
-              )}
-              <button className="ol-change-email-btn" onClick={resetLookup}>
-                Use a different number
-              </button>
             </>
           )}
         </div>

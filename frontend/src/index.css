@@ -2462,7 +2462,6 @@ ul {
 }
 
 .ol-change-email-btn {
-  margin-top: 16px;
   background: none;
   border: none;
   padding: 0;
@@ -2475,4 +2474,96 @@ ul {
 
 .ol-change-email-btn:hover {
   color: var(--color-black);
+}
+
+/* ─── OTP boxes ─────────────────────────────────────────── */
+.otp-boxes {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+
+.otp-box {
+  width: 48px;
+  height: 58px;
+  text-align: center;
+  font-size: 1.55rem;
+  font-family: var(--font-serif);
+  border: 1.5px solid var(--color-border);
+  background: white;
+  outline: none;
+  transition: border-color 0.15s;
+  caret-color: transparent;
+  -webkit-appearance: none;
+  border-radius: 0;
+}
+
+.otp-box:focus {
+  border-color: var(--color-black);
+}
+
+.otp-box--filled {
+  border-color: #999;
+}
+
+.otp-box:disabled {
+  background: #f7f7f7;
+  color: #bbb;
+  border-color: #e0e0e0;
+}
+
+/* Full-width verify button */
+.ol-verify-btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+/* Attempts remaining */
+.ol-attempts {
+  font-size: 0.8rem;
+  color: #b8620a;
+  text-align: center;
+  margin-top: 4px;
+}
+
+/* Resend + change number row */
+.ol-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ol-resend-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  color: #444;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--font-sans);
+}
+
+.ol-resend-btn:disabled {
+  color: #aaa;
+  cursor: default;
+  text-decoration: none;
+}
+
+.ol-resend-btn:not(:disabled):hover {
+  color: var(--color-black);
+}
+
+@media (max-width: 480px) {
+  .otp-boxes { gap: 7px; }
+  .otp-box { width: 42px; height: 52px; font-size: 1.3rem; }
+  .orders-lookup__card { padding: 32px 24px; }
 }
