@@ -65,10 +65,39 @@ const init = async () => {
         badgeBgColor VARCHAR(20) DEFAULT '#000000',
         badgeTextColor VARCHAR(20) DEFAULT '#ffffff',
         sizeStock JSON,
+        productType VARCHAR(100),
+        views INT NOT NULL DEFAULT 0,
         createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
+
+    // Product types (managed in the admin CMS) used for filtering on the storefront
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS product_types (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        displayOrder INT NOT NULL DEFAULT 0,
+        createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `);
+
+    // ─── Lightweight migrations for existing databases ───────────────────────
+    // MySQL has no "ADD COLUMN IF NOT EXISTS", so check information_schema first.
+    const ensureColumn = async (table, column, definition) => {
+      const [cols] = await conn.query(
+        `SELECT COUNT(*) AS c FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [dbName, table, column]
+      );
+      if (cols[0].c === 0) {
+        await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${definition}`);
+        console.log(`🔧 Added column ${table}.${column}`);
+      }
+    };
+    await ensureColumn('products', 'productType', 'productType VARCHAR(100)');
+    await ensureColumn('products', 'views', 'views INT NOT NULL DEFAULT 0');
 
     await conn.query(`
       CREATE TABLE IF NOT EXISTS media (

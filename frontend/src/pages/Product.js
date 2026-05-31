@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import api, { getMediaUrl } from '../services/api';
+import api, { getMediaUrl, incrementProductView } from '../services/api';
 import { ShoppingCart, Minus, Plus, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNotification } from '../context/NotificationContext';
@@ -20,6 +20,20 @@ const Product = () => {
   useEffect(() => {
     fetchProductAndRelated();
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  // Track a unique view per browser session for this product
+  useEffect(() => {
+    if (!id) return;
+    try {
+      const viewedKey = `viewed_product_${id}`;
+      if (!sessionStorage.getItem(viewedKey)) {
+        sessionStorage.setItem(viewedKey, '1');
+        incrementProductView(id).catch(() => {});
+      }
+    } catch {
+      incrementProductView(id).catch(() => {});
+    }
   }, [id]);
 
   const fetchProductAndRelated = async () => {

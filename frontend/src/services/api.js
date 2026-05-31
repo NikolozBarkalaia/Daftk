@@ -58,3 +58,12 @@ export const verifyOrderLookup = (phone, code) => api.post('/orders/verify-looku
 export const getSettings = () => api.get('/settings');
 export const updateSettings = (data) => api.put('/settings', data);
 
+// ─── Product Types ──────────────────────────────────────────
+export const getProductTypes = () => api.get('/product-types');
+export const createProductType = (data) => api.post('/product-types', data);
+export const updateProductType = (id, data) => api.put(`/product-types/${id}`, data);
+export const deleteProductType = (id) => api.delete(`/product-types/${id}`);
+
+// ─── Products ───────────────────────────────────────────────
+export const incrementProductView = (id) => api.post(`/products/${id}/view`);
+

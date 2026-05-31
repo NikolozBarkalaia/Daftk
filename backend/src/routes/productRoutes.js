@@ -8,6 +8,7 @@ const {
   updateProduct,
   addProductImage,
   removeProductImage,
+  incrementProductViews,
   deleteProduct
 } = require('../controllers/productController');
 const { protect, admin } = require('../middleware/authMiddleware');
@@ -16,6 +17,7 @@ const { protect, admin } = require('../middleware/authMiddleware');
 router.get('/featured', getFeaturedProducts);
 router.get('/', getProducts);
 router.get('/:id', getProductById);
+router.post('/:id/view', incrementProductViews);
 
 // Admin routes - most specific paths first
 router.post('/', protect, admin, createProduct);

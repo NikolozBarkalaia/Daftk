@@ -13,33 +13,54 @@ function format(row) {
     badgeBgColor: row.badgeBgColor || '#000000',
     badgeTextColor: row.badgeTextColor || '#ffffff',
     sizeStock: typeof row.sizeStock === 'string' ? JSON.parse(row.sizeStock || '{}') : (row.sizeStock || {}),
+    productType: row.productType || null,
+    views: row.views || 0,
   };
 }
 
+const SORT_COLUMNS = {
+  newest: 'createdAt DESC',
+  oldest: 'createdAt ASC',
+  price_asc: 'price ASC',
+  price_desc: 'price DESC',
+  views: 'views DESC',
+  name: 'name ASC',
+};
+
 const Product = {
-  async find({ category } = {}, { skip = 0, limit = 20 } = {}) {
-    let rows;
+  async find({ category, productType } = {}, { skip = 0, limit = 20, sort = 'newest' } = {}) {
+    const where = [];
+    const params = [];
     if (category) {
-      [rows] = await pool.query(
-        'SELECT * FROM products WHERE category = ? ORDER BY createdAt DESC LIMIT ? OFFSET ?',
-        [category, limit, skip]
-      );
-    } else {
-      [rows] = await pool.query(
-        'SELECT * FROM products ORDER BY createdAt DESC LIMIT ? OFFSET ?',
-        [limit, skip]
-      );
+      where.push('category = ?');
+      params.push(category);
     }
+    if (productType) {
+      where.push('productType = ?');
+      params.push(productType);
+    }
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const orderBy = SORT_COLUMNS[sort] || SORT_COLUMNS.newest;
+    const [rows] = await pool.query(
+      `SELECT * FROM products ${whereClause} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
+      [...params, limit, skip]
+    );
     return rows.map(format);
   },
 
-  async countDocuments({ category } = {}) {
-    let rows;
+  async countDocuments({ category, productType } = {}) {
+    const where = [];
+    const params = [];
     if (category) {
-      [rows] = await pool.query('SELECT COUNT(*) as c FROM products WHERE category = ?', [category]);
-    } else {
-      [rows] = await pool.query('SELECT COUNT(*) as c FROM products');
+      where.push('category = ?');
+      params.push(category);
     }
+    if (productType) {
+      where.push('productType = ?');
+      params.push(productType);
+    }
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+    const [rows] = await pool.query(`SELECT COUNT(*) as c FROM products ${whereClause}`, params);
     return rows[0].c;
   },
 
@@ -56,11 +77,11 @@ const Product = {
     return format(rows[0] || null);
   },
 
-  async create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [], hasBadge = false, badgeText = null, badgeBgColor = '#000000', badgeTextColor = '#ffffff', sizeStock = {} }) {
+  async create({ name, description, price, oldPrice = null, category, tags = [], stock = 0, isFeatured = false, luxuryLabel = null, imageUrls = [], hasBadge = false, badgeText = null, badgeBgColor = '#000000', badgeTextColor = '#ffffff', sizeStock = {}, productType = null }) {
     const [result] = await pool.query(
-      `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, hasBadge ? 1 : 0, badgeText, badgeBgColor, badgeTextColor, JSON.stringify(sizeStock)]
+      `INSERT INTO products (name, description, price, oldPrice, imageUrls, category, tags, stock, isFeatured, luxuryLabel, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock, productType)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [name, description, price, oldPrice, JSON.stringify(imageUrls), category, JSON.stringify(tags), stock, isFeatured ? 1 : 0, luxuryLabel, hasBadge ? 1 : 0, badgeText, badgeBgColor, badgeTextColor, JSON.stringify(sizeStock), productType]
     );
     return this.findById(result.insertId);
   },
@@ -69,7 +90,7 @@ const Product = {
     const p = await this.findById(id);
     if (!p) return null;
     await pool.query(
-      `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, hasBadge=?, badgeText=?, badgeBgColor=?, badgeTextColor=?, sizeStock=? WHERE id=?`,
+      `UPDATE products SET name=?, description=?, price=?, oldPrice=?, imageUrls=?, category=?, tags=?, stock=?, isFeatured=?, luxuryLabel=?, hasBadge=?, badgeText=?, badgeBgColor=?, badgeTextColor=?, sizeStock=?, productType=? WHERE id=?`,
       [
         fields.name !== undefined ? fields.name : p.name,
         fields.description !== undefined ? fields.description : p.description,
@@ -86,10 +107,15 @@ const Product = {
         fields.badgeBgColor !== undefined ? fields.badgeBgColor : p.badgeBgColor,
         fields.badgeTextColor !== undefined ? fields.badgeTextColor : p.badgeTextColor,
         JSON.stringify(fields.sizeStock !== undefined ? fields.sizeStock : p.sizeStock),
+        fields.productType !== undefined ? fields.productType : p.productType,
         id,
       ]
     );
     return this.findById(id);
+  },
+
+  async incrementViews(id) {
+    await pool.query('UPDATE products SET views = views + 1 WHERE id = ?', [id]);
   },
 
   async decreaseStock(id, size, quantity) {

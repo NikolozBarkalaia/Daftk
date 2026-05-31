@@ -4,11 +4,25 @@ dotenv.config();
 const { pool, init } = require('./config/db');
 const User = require('./models/User');
 const Product = require('./models/Product');
+const ProductType = require('./models/ProductType');
 const Media = require('./models/Media');
 const Hero = require('./models/Hero');
 const SliderItem = require('./models/SliderItem');
 
-// ─── Seed Data ───────────────────────────────────────────────────────────────
+// ─── Product Types ────────────────────────────────────────────────────────────
+
+const productTypes = [
+  { name: 'Blazers',    displayOrder: 0 },
+  { name: 'Dresses',   displayOrder: 1 },
+  { name: 'Coats',     displayOrder: 2 },
+  { name: 'Knitwear',  displayOrder: 3 },
+  { name: 'Boots',     displayOrder: 4 },
+  { name: 'Bags',      displayOrder: 5 },
+  { name: 'Jewellery', displayOrder: 6 },
+  { name: 'Watches',   displayOrder: 7 },
+];
+
+// ─── Seed Data ────────────────────────────────────────────────────────────────
 
 const mediaItems = [
   { filename: 'hero-bg.jpg',      url: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600', type: 'image/jpeg', size: 320000 },
@@ -28,8 +42,10 @@ const products = [
     price: 1290,
     oldPrice: 1650,
     category: 'Clothing',
+    productType: 'Blazers',
     tags: ['blazer', 'velvet', 'luxury', 'new'],
     stock: 12,
+    sizeStock: { XS: 1, S: 3, M: 4, L: 3, XL: 1 },
     isFeatured: true,
     luxuryLabel: 'Exclusive Edition',
     imageUrls: [
@@ -40,6 +56,7 @@ const products = [
     badgeText: 'NEW',
     badgeBgColor: '#ef4444',
     badgeTextColor: '#ffffff',
+    views: 342,
   },
   {
     name: 'Obsidian Leather Bag',
@@ -47,8 +64,10 @@ const products = [
     price: 890,
     oldPrice: null,
     category: 'Accessories',
+    productType: 'Bags',
     tags: ['bag', 'leather', 'handcrafted'],
     stock: 8,
+    sizeStock: { XS: 0, S: 2, M: 3, L: 2, XL: 1 },
     isFeatured: true,
     luxuryLabel: null,
     imageUrls: [
@@ -59,6 +78,7 @@ const products = [
     badgeText: null,
     badgeBgColor: '#000000',
     badgeTextColor: '#ffffff',
+    views: 218,
   },
   {
     name: 'Ivory Silk Evening Dress',
@@ -66,8 +86,10 @@ const products = [
     price: 2150,
     oldPrice: 2600,
     category: 'Clothing',
+    productType: 'Dresses',
     tags: ['dress', 'silk', 'evening', 'featured'],
     stock: 5,
+    sizeStock: { XS: 1, S: 2, M: 2, L: 0, XL: 0 },
     isFeatured: true,
     luxuryLabel: 'Haute Collection',
     imageUrls: [
@@ -78,6 +100,7 @@ const products = [
     badgeText: 'SALE',
     badgeBgColor: '#f59e0b',
     badgeTextColor: '#ffffff',
+    views: 519,
   },
   {
     name: 'Signature Cashmere Coat',
@@ -85,8 +108,10 @@ const products = [
     price: 3400,
     oldPrice: null,
     category: 'Clothing',
+    productType: 'Coats',
     tags: ['coat', 'cashmere', 'winter', 'luxury'],
     stock: 6,
+    sizeStock: { XS: 0, S: 1, M: 2, L: 2, XL: 1 },
     isFeatured: true,
     luxuryLabel: 'Limited Run',
     imageUrls: [
@@ -97,6 +122,7 @@ const products = [
     badgeText: 'LIMITED',
     badgeBgColor: '#8b5cf6',
     badgeTextColor: '#ffffff',
+    views: 407,
   },
   {
     name: 'Architect Timepiece',
@@ -104,8 +130,10 @@ const products = [
     price: 4200,
     oldPrice: 4800,
     category: 'Accessories',
+    productType: 'Watches',
     tags: ['watch', 'swiss', 'luxury', 'men'],
     stock: 3,
+    sizeStock: { XS: 0, S: 1, M: 1, L: 1, XL: 0 },
     isFeatured: true,
     luxuryLabel: 'Prestige Series',
     imageUrls: [
@@ -116,6 +144,7 @@ const products = [
     badgeText: 'EXCLUSIVE',
     badgeBgColor: '#1f2937',
     badgeTextColor: '#fbbf24',
+    views: 631,
   },
   {
     name: 'Suede Chelsea Boots',
@@ -123,13 +152,16 @@ const products = [
     price: 760,
     oldPrice: 920,
     category: 'Footwear',
+    productType: 'Boots',
     tags: ['boots', 'suede', 'chelsea', 'men'],
     stock: 14,
+    sizeStock: { XS: 2, S: 3, M: 4, L: 3, XL: 2 },
     isFeatured: false,
     luxuryLabel: null,
     imageUrls: [
       'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
     ],
+    views: 183,
   },
   {
     name: 'Geometric Gold Earrings',
@@ -137,13 +169,16 @@ const products = [
     price: 340,
     oldPrice: null,
     category: 'Jewellery',
+    productType: 'Jewellery',
     tags: ['earrings', 'gold', 'minimal', 'women'],
     stock: 20,
+    sizeStock: { XS: 3, S: 5, M: 6, L: 4, XL: 2 },
     isFeatured: false,
     luxuryLabel: null,
     imageUrls: [
       'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800',
     ],
+    views: 95,
   },
   {
     name: 'Merino Turtleneck',
@@ -151,13 +186,16 @@ const products = [
     price: 420,
     oldPrice: 520,
     category: 'Clothing',
+    productType: 'Knitwear',
     tags: ['knitwear', 'merino', 'turtleneck', 'basics'],
     stock: 25,
+    sizeStock: { XS: 3, S: 6, M: 8, L: 6, XL: 2 },
     isFeatured: false,
     luxuryLabel: null,
     imageUrls: [
       'https://images.unsplash.com/photo-1564859228273-274232fdb516?w=800',
     ],
+    views: 267,
   },
 ];
 
@@ -171,17 +209,24 @@ const importData = async () => {
     await pool.execute('DELETE FROM hero');
     await pool.execute('DELETE FROM media');
     await pool.execute('DELETE FROM products');
+    await pool.execute('DELETE FROM product_types');
     await pool.execute('DELETE FROM orders');
     await pool.execute('DELETE FROM contact_messages');
     await pool.execute('DELETE FROM users');
     // Reset auto-increment counters
-    for (const t of ['slider_items','hero','media','products','orders','contact_messages','users']) {
+    for (const t of ['slider_items','hero','media','products','product_types','orders','contact_messages','users']) {
       await pool.execute(`ALTER TABLE ${t} AUTO_INCREMENT = 1`);
     }
 
     // ── Admin user ─────────────────────────────────────────────────────────
     console.log('Creating admin user...');
     await User.create({ name: 'Admin User', email: 'admin@daftk.com', password: 'password123', isAdmin: true });
+
+    // ── Product Types ──────────────────────────────────────────────────────
+    console.log('Seeding product types...');
+    for (const t of productTypes) {
+      await ProductType.create(t);
+    }
 
     // ── Media ──────────────────────────────────────────────────────────────
     console.log('Seeding media...');
@@ -193,7 +238,11 @@ const importData = async () => {
     // ── Products ───────────────────────────────────────────────────────────
     console.log('Seeding products...');
     for (const p of products) {
-      await Product.create(p);
+      const created = await Product.create(p);
+      // Set seeded view counts directly (create() defaults to 0)
+      if (p.views) {
+        await pool.execute('UPDATE products SET views = ? WHERE id = ?', [p.views, created._id]);
+      }
     }
 
     // ── Hero (linked to first media item) ──────────────────────────────────
@@ -248,8 +297,9 @@ const importData = async () => {
 
     console.log('\n✓ Seeding complete!');
     console.log(`  • 1 admin user    → admin@daftk.com / password123`);
+    console.log(`  • ${productTypes.length} product types`);
     console.log(`  • ${createdMedia.length} media items`);
-    console.log(`  • ${products.length} products`);
+    console.log(`  • ${products.length} products (with types & views)`);
     console.log(`  • 1 hero section`);
     console.log(`  • 3 slider items`);
     await pool.end();

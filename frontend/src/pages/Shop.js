@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import api, { getMediaUrl } from '../services/api';
+import api, { getMediaUrl, getProductTypes } from '../services/api';
 import { useSettings } from '../context/SettingsContext';
+import { Search, X } from 'lucide-react';
+import CustomSelect from '../components/CustomSelect';
 
 /* ─── Product Card with quick-add ─────────────────────────── */
 const ProductCard = ({ product }) => {
@@ -54,17 +56,28 @@ const ProductCard = ({ product }) => {
 const Shop = () => {
   const { settings } = useSettings();
   const [allProducts, setAllProducts] = useState([]);
+  const [productTypes, setProductTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const productsPerPage = 12;
 
+  // Filters
+  const [search, setSearch] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        // Fetch all products (using a high limit to get everything)
-        const { data } = await api.get('/products?limit=1000');
-        setAllProducts(data.products);
+        const [productsRes, typesRes] = await Promise.all([
+          api.get('/products?limit=1000'),
+          getProductTypes().catch(() => ({ data: [] })),
+        ]);
+        setAllProducts(productsRes.data.products);
+        setProductTypes(typesRes.data || []);
       } catch (error) {
         console.error('Error fetching products', error);
         setAllProducts([]);
@@ -73,14 +86,80 @@ const Shop = () => {
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
+  // Reset to first page whenever filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, selectedType, minPrice, maxPrice, sortBy]);
+
+  // Price bounds available for products (used as placeholders)
+  const priceBounds = useMemo(() => {
+    if (allProducts.length === 0) return { min: 0, max: 0 };
+    const prices = allProducts.map(p => Number(p.price) || 0);
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  }, [allProducts]);
+
+  const filteredProducts = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    const min = minPrice !== '' ? parseFloat(minPrice) : null;
+    const max = maxPrice !== '' ? parseFloat(maxPrice) : null;
+
+    let result = allProducts.filter(p => {
+      // Search by name, description, category, tags
+      if (term) {
+        const haystack = [
+          p.name,
+          p.description,
+          p.category,
+          p.productType,
+          ...(p.tags || []),
+        ].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      // Type filter
+      if (selectedType && p.productType !== selectedType) return false;
+      // Price range
+      const price = Number(p.price) || 0;
+      if (min !== null && price < min) return false;
+      if (max !== null && price > max) return false;
+      return true;
+    });
+
+    result = [...result].sort((a, b) => {
+      switch (sortBy) {
+        case 'price_asc':
+          return (a.price || 0) - (b.price || 0);
+        case 'price_desc':
+          return (b.price || 0) - (a.price || 0);
+        case 'popular':
+          return (b.views || 0) - (a.views || 0);
+        case 'name':
+          return a.name.localeCompare(b.name);
+        default:
+          return (b._id || 0) - (a._id || 0);
+      }
+    });
+
+    return result;
+  }, [allProducts, search, selectedType, minPrice, maxPrice, sortBy]);
+
+  const hasActiveFilters = search || selectedType || minPrice || maxPrice || sortBy !== 'newest';
+
+  const clearFilters = () => {
+    setSearch('');
+    setSelectedType('');
+    setMinPrice('');
+    setMaxPrice('');
+    setSortBy('newest');
+  };
+
   // Calculate pagination values
-  const totalPages = Math.ceil(allProducts.length / productsPerPage);
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
   const indexOfLastProduct = page * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = allProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const handlePageChange = (newPage) => {
     setPage(newPage);
@@ -90,18 +169,110 @@ const Shop = () => {
   return (
     <div className="container">
       <h1 className="page-title">{settings.shop_collection_title}</h1>
+
+      {/* Filter Bar */}
+      <div className="mb-8">
+        <div className="flex flex-col lg:flex-row gap-3 lg:items-end">
+          {/* Search */}
+          <div className="flex-1">
+            <label className="block text-xs uppercase tracking-widest text-gray-dark mb-2">Search</label>
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-dark" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search products..."
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 focus:border-black outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Type filter */}
+          {productTypes.length > 0 && (
+            <div>
+              <CustomSelect
+                label="Type"
+                value={selectedType}
+                onChange={setSelectedType}
+                options={[
+                  { value: '', label: 'All Types' },
+                  ...productTypes.map(t => ({ value: t.name, label: t.name })),
+                ]}
+                placeholder="All Types"
+                minWidth="160px"
+              />
+            </div>
+          )}
+
+          {/* Price range */}
+          <div>
+            <label className="block text-xs uppercase tracking-widest text-gray-dark mb-2">Price (₾)</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                placeholder={priceBounds.min ? `${priceBounds.min}` : 'Min'}
+                min="0"
+                className="w-20 px-3 py-2 border border-gray-300 focus:border-black outline-none text-sm"
+              />
+              <span className="text-gray-dark">–</span>
+              <input
+                type="number"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                placeholder={priceBounds.max ? `${priceBounds.max}` : 'Max'}
+                min="0"
+                className="w-20 px-3 py-2 border border-gray-300 focus:border-black outline-none text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Sort */}
+          <div>
+            <CustomSelect
+              label="Sort"
+              value={sortBy}
+              onChange={setSortBy}
+              options={[
+                { value: 'newest',     label: 'Newest' },
+                { value: 'popular',    label: 'Most Popular' },
+                { value: 'price_asc',  label: 'Price: Low to High' },
+                { value: 'price_desc', label: 'Price: High to Low' },
+                { value: 'name',       label: 'Name (A–Z)' },
+              ]}
+              minWidth="200px"
+            />
+          </div>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 px-4 py-2 text-sm border border-gray-300 hover:bg-black hover:text-white transition-colors"
+            >
+              <X size={14} /> Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       {loading ? (
         <p className="text-center py-20">Loading Collection...</p>
       ) : (
         <>
+          <p className="text-sm text-gray-dark mb-6">
+            {filteredProducts.length} {filteredProducts.length === 1 ? 'product' : 'products'}
+          </p>
+
           <div className="product-grid">
             {currentProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}
           </div>
 
-          {allProducts.length === 0 && (
-            <p className="text-center py-20 text-gray-dark">No products found in the collection.</p>
+          {filteredProducts.length === 0 && (
+            <p className="text-center py-20 text-gray-dark">No products match your filters.</p>
           )}
 
           <br />

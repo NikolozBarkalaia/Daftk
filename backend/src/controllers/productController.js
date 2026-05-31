@@ -8,11 +8,16 @@ const getProducts = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const category = req.query.category;
+    const productType = req.query.productType;
+    const sort = req.query.sort;
     const skip = (page - 1) * limit;
 
-    const query = category ? { category } : {};
+    const query = {};
+    if (category) query.category = category;
+    if (productType) query.productType = productType;
+
     const [products, total] = await Promise.all([
-      Product.find(query, { skip, limit }),
+      Product.find(query, { skip, limit, sort }),
       Product.countDocuments(query),
     ]);
 
@@ -60,14 +65,14 @@ const getFeaturedProducts = async (req, res) => {
 // @access  Private/Admin
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock } = req.body;
+    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock, productType } = req.body;
 
     if (!name || !description || !price || !category || stock === undefined) {
       return res.status(400).json({ message: 'Please provide required fields' });
     }
 
     const product = await Product.create({
-      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock,
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock, productType,
     });
 
     res.status(201).json(product);
@@ -81,7 +86,7 @@ const createProduct = async (req, res) => {
 // @access  Private/Admin
 const updateProduct = async (req, res) => {
   try {
-    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock } = req.body;
+    const { name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock, productType } = req.body;
 
     const product = await Product.findById(req.params.id);
     if (!product) {
@@ -89,7 +94,7 @@ const updateProduct = async (req, res) => {
     }
 
     const updated = await Product.update(req.params.id, {
-      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock,
+      name, description, price, oldPrice, category, tags, stock, isFeatured, luxuryLabel, imageUrls, hasBadge, badgeText, badgeBgColor, badgeTextColor, sizeStock, productType,
     });
 
     res.status(200).json(updated);
@@ -146,6 +151,22 @@ const removeProductImage = async (req, res) => {
   }
 };
 
+// @desc    Increment product view count (public)
+// @route   POST /api/products/:id/view
+// @access  Public
+const incrementProductViews = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    await Product.incrementViews(req.params.id);
+    res.status(200).json({ views: (product.views || 0) + 1 });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Delete product
 // @route   DELETE /api/admin/products/:id
 // @access  Private/Admin
@@ -170,6 +191,7 @@ module.exports = {
   updateProduct,
   addProductImage,
   removeProductImage,
+  incrementProductViews,
   deleteProduct,
 };
 

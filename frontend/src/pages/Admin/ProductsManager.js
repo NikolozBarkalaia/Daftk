@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import api, { getMediaUrl } from '../../services/api';
-import { Plus, Trash2, Edit2, Upload } from 'lucide-react';
+import api, { getMediaUrl, getProductTypes, createProductType, deleteProductType } from '../../services/api';
+import { Plus, Trash2, Edit2, Upload, Eye, Tag } from 'lucide-react';
 import { useNotification } from '../../context/NotificationContext';
+import CustomSelect from '../../components/CustomSelect';
 
 /* ─── Luxury Badge Presets ─────────────────────────────────────── */
 const BADGE_PRESETS = [
@@ -26,12 +27,17 @@ const ProductsManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [productTypes, setProductTypes] = useState([]);
+  const [newTypeName, setNewTypeName] = useState('');
+  const [showTypeManager, setShowTypeManager] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: '',
     oldPrice: '',
     category: '',
+    productType: '',
     tags: '',
     stock: '',
     isFeatured: false,
@@ -46,8 +52,48 @@ const ProductsManager = () => {
 
   useEffect(() => {
     fetchProducts();
+    fetchProductTypes();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchProductTypes = async () => {
+    try {
+      const { data } = await getProductTypes();
+      setProductTypes(data);
+    } catch (error) {
+      console.error('Error fetching product types:', error);
+    }
+  };
+
+  const handleAddType = async () => {
+    const name = newTypeName.trim();
+    if (!name) return;
+    try {
+      const { data } = await createProductType({ name });
+      setProductTypes(prev => [...prev, data]);
+      setNewTypeName('');
+      showSuccess('Product type added!');
+    } catch (error) {
+      showError(error.response?.data?.message || 'Error adding product type');
+    }
+  };
+
+  const handleDeleteType = async (id) => {
+    const isConfirmed = await confirm({
+      title: 'Delete Product Type',
+      message: 'Are you sure you want to delete this product type? Products using it will keep their current value.',
+      confirmText: 'Delete',
+      danger: true,
+    });
+    if (!isConfirmed) return;
+    try {
+      await deleteProductType(id);
+      setProductTypes(prev => prev.filter(t => t._id !== id));
+      showSuccess('Product type deleted!');
+    } catch (error) {
+      showError('Error deleting product type');
+    }
+  };
 
   const fetchProducts = async () => {
     try {
@@ -69,6 +115,7 @@ const ProductsManager = () => {
       price: '',
       oldPrice: '',
       category: '',
+      productType: '',
       tags: '',
       stock: '',
       isFeatured: false,
@@ -153,6 +200,7 @@ const ProductsManager = () => {
         price: parseFloat(formData.price),
         oldPrice: formData.oldPrice ? parseFloat(formData.oldPrice) : null,
         category: formData.category,
+        productType: formData.productType || null,
         tags: formData.tags.split(',').map(t => t.trim()).filter(t => t),
         stock: parseInt(formData.stock),
         isFeatured: formData.isFeatured,
@@ -191,6 +239,7 @@ const ProductsManager = () => {
       price: product.price.toString(),
       oldPrice: product.oldPrice ? product.oldPrice.toString() : '',
       category: product.category,
+      productType: product.productType || '',
       tags: product.tags.join(', '),
       stock: product.stock.toString(),
       isFeatured: product.isFeatured,
@@ -228,18 +277,51 @@ const ProductsManager = () => {
 
   if (loading) return <div className="text-center py-8">Loading products...</div>;
 
+  const sortedProducts = [...products].sort((a, b) => {
+    switch (sortBy) {
+      case 'views':
+        return (b.views || 0) - (a.views || 0);
+      case 'price_desc':
+        return b.price - a.price;
+      case 'price_asc':
+        return a.price - b.price;
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'oldest':
+        return (a._id || 0) - (b._id || 0);
+      default:
+        return (b._id || 0) - (a._id || 0);
+    }
+  });
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-serif font-bold">Products Management</h1>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn flex items-center gap-2"
-          >
-            <Plus size={20} /> Add Product
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <CustomSelect
+            value={sortBy}
+            onChange={setSortBy}
+            options={[
+              { value: 'newest',     label: 'Newest' },
+              { value: 'oldest',     label: 'Oldest' },
+              { value: 'views',      label: 'Most Viewed' },
+              { value: 'price_desc', label: 'Price: High to Low' },
+              { value: 'price_asc',  label: 'Price: Low to High' },
+              { value: 'name',       label: 'Name (A–Z)' },
+            ]}
+            placeholder="Sort by"
+            minWidth="180px"
+          />
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn flex items-center gap-2"
+            >
+              <Plus size={20} /> Add Product
+            </button>
+          )}
+        </div>
       </div>
 
 
@@ -273,6 +355,66 @@ const ProductsManager = () => {
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium">Product Type</label>
+                <button
+                  type="button"
+                  onClick={() => setShowTypeManager(s => !s)}
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                >
+                  <Tag size={12} /> Manage Types
+                </button>
+              </div>
+              <CustomSelect
+                value={formData.productType}
+                onChange={(val) => setFormData(prev => ({ ...prev, productType: val }))}
+                options={[
+                  { value: '', label: 'None' },
+                  ...productTypes.map(t => ({ value: t.name, label: t.name })),
+                ]}
+                placeholder="None"
+                minWidth="200px"
+              />
+
+              {showTypeManager && (
+                <div className="mt-3 bg-gray-50 p-4 rounded border border-border">
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddType(); } }}
+                      className="input-field flex-1"
+                      placeholder="e.g. Shirts, Skirts, Hats"
+                    />
+                    <button type="button" onClick={handleAddType} className="btn flex items-center gap-1">
+                      <Plus size={16} /> Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {productTypes.length === 0 ? (
+                      <span className="text-xs text-gray-dark">No types yet. Add one above.</span>
+                    ) : (
+                      productTypes.map(t => (
+                        <span key={t._id} className="inline-flex items-center gap-1 text-xs bg-white border border-border px-2 py-1 rounded">
+                          {t.name}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteType(t._id)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Delete type"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -368,18 +510,19 @@ const ProductsManager = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">Luxury Label</label>
-                <select
-                  name="luxuryLabel"
+                <CustomSelect
                   value={formData.luxuryLabel}
-                  onChange={handleInputChange}
-                  className="input-field"
-                >
-                  <option value="">None</option>
-                  <option value="new">New</option>
-                  <option value="exclusive">Exclusive</option>
-                  <option value="limited">Limited</option>
-                  <option value="bestseller">Bestseller</option>
-                </select>
+                  onChange={(val) => setFormData(prev => ({ ...prev, luxuryLabel: val }))}
+                  options={[
+                    { value: '',           label: 'None' },
+                    { value: 'new',        label: 'New' },
+                    { value: 'exclusive',  label: 'Exclusive' },
+                    { value: 'limited',    label: 'Limited' },
+                    { value: 'bestseller', label: 'Bestseller' },
+                  ]}
+                  placeholder="None"
+                  minWidth="160px"
+                />
               </div>
             </div>
 
@@ -601,7 +744,7 @@ const ProductsManager = () => {
         {products.length === 0 ? (
           <p className="text-center text-gray-dark py-8">No products yet. Create one to get started!</p>
         ) : (
-          products.map((product) => (
+          sortedProducts.map((product) => (
             <div key={product._id} className="bg-white p-6 rounded-lg border border-border shadow-sm">
               <div className="flex items-start gap-4">
                 {product.imageUrls && product.imageUrls.length > 0 && (
@@ -612,8 +755,11 @@ const ProductsManager = () => {
                   />
                 )}
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <h3 className="text-xl font-serif font-bold">{product.name}</h3>
+                    {product.productType && (
+                      <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">{product.productType}</span>
+                    )}
                     {product.luxuryLabel && (
                       <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded capitalize">
                         {product.luxuryLabel}
@@ -622,6 +768,9 @@ const ProductsManager = () => {
                     {product.isFeatured && (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Featured</span>
                     )}
+                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded inline-flex items-center gap-1">
+                      <Eye size={12} /> {product.views || 0} views
+                    </span>
                   </div>
                   <p className="text-gray-dark mb-2">{product.description.substring(0, 100)}...</p>
                   <div className="grid grid-cols-4 gap-4 text-sm">
